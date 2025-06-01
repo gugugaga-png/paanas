@@ -32,82 +32,57 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
-
-    <div class="card mb-4">
-        <div class="card-header">
-            <h3 class="card-title">Pengajuan Tabungan Menunggu Validasi</h3>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 row-cols-lg-4 row-cols-xl-4  g-4">
+    @forelse ($segments as $segment)
+        <div class="col">
+            <div class="card d-flex flex-column h-100"> {{-- Tambahkan h-100 untuk tinggi kartu yang seragam --}}
+            <a href="#">
+    @if($segment->banner)
+        <div class="banner-container" style="position: relative; width: 100%; padding-top: 35%; overflow: hidden;">
+            <img src="{{ asset('storage/' . $segment->banner) }}" alt="Segment Banner" class="banner-image"
+                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; display: block;">
         </div>
-        <div class="table-responsive">
-            <table class="table card-table table-vcenter text-nowrap datatable">
-                <thead>
-                    <tr>
-                        <th>Tanggal</th>
-                        <th>Murid</th>
-                        <th>Segment</th>
-                        <th>Jumlah</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($pendingTransactions as $transaction)
-                        <tr>
-                            <td>{{ $transaction->created_at->format('d M Y H:i') }}</td>
-                            <td>{{ $transaction->user->name }}</td>
-                            <td>{{ $transaction->savingSegment->name }} <span class="badge bg-green-lt">{{ $transaction->savingSegment->unique_code }}</span></td>
-                            <td>Rp {{ number_format($transaction->amount, 0, ',', '.') }}</td>
-                            <td>
-                                <form action="{{ route('teacher.transactions.approve', $transaction) }}" method="POST" class="d-inline">
-                                    @csrf
-                                    <button type="submit" class="btn btn-sm btn-success">Setujui</button>
-                                </form>
-                                <form action="{{ route('teacher.transactions.reject', $transaction) }}" method="POST" class="d-inline ms-2">
-                                    @csrf
-                                    <button type="submit" class="btn btn-sm btn-danger">Tolak</button>
-                                </form>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="text-center">Tidak ada pengajuan tabungan yang menunggu validasi.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+    @else
+        <div class="banner-container" style="position: relative; width: 100%; padding-top: 35%; overflow: hidden;">
+            <img src="{{ asset('images/default.png') }}" alt="Default Banner" class="banner-image"
+                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; display: block;">
         </div>
+    @endif
+</a>
+                <div class="card-body d-flex flex-column">
+                    <h3 class="card-title">
+                        <h3 class="card-title">
+    <a href="{{ route('teacher.segments.show', $segment) }}">{{ $segment->name }}</a>
+</h3>
+                    </h3>
+                    <div class="text-secondary flex-grow-1"> {{-- flex-grow-1 agar deskripsi mengambil ruang dan mendorong footer ke bawah --}}
+                        {{ $segment->description ?? 'Tidak ada deskripsi' }}
+                    </div>
+                    <div class="d-flex align-items-center pt-4 mt-auto">
+                        {{-- Memanggil avatar pembuat segment (pastikan $segment->user->avatar_url tersedia) --}}
+                        <span class="avatar me-2" style="background-image: url({{ $segment->user->avatar_url ?? '/static/avatars/default.jpg' }})"></span>
+                        <div class="ms-1">
+                            {{-- Memanggil nama pembuat segment --}}
+                            <a href="#" class="text-body">{{ $segment->user->name ?? 'Pengguna Tidak Dikenal' }}</a>
+                            {{-- Tampilkan kapan segment dibuat --}}
+                            <div class="text-secondary">{{ $segment->created_at->diffForHumans() }}</div>
+                        </div>
+                        <div class="ms-auto">
+                            <a href="#" class="icon d-none d-md-inline-block ms-3 text-secondary">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572" /></svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @empty
+        <div class="col-12">
+            <p class="text-center">Belum ada segmen tabungan yang dibuat.</p>
+        </div>
+    @endforelse
+</div>
     </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Segment Tabungan Saya</h3>
-        </div>
-        <div class="table-responsive">
-            <table class="table card-table table-vcenter text-nowrap datatable">
-                <thead>
-                    <tr>
-                        <th>Nama Segment</th>
-                        <th>Deskripsi</th>
-                        <th>Kode Unik</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($segments as $segment)
-                        <tr>
-                            <td>{{ $segment->name }}</td>
-                            <td>{{ $segment->description ?? '-' }}</td>
-                            <td><span class="badge bg-green-lt">{{ $segment->unique_code }}</span></td>
-                            <td>
-                                <a href="{{ route('teacher.segments.transactions', $segment) }}" class="btn btn-sm btn-info">Lihat Transaksi</a>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="text-center">Belum ada segmen tabungan yang dibuat.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
+   
 </div>
 @endsection

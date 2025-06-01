@@ -4,7 +4,7 @@
     <div class="container-xl">
         <div class="row row-cards">
             <div class="col-12">
-                <form action="{{ route('teacher.segments.store') }}" method="POST" class="card">
+                <form action="{{ route('teacher.segments.store') }}" method="POST" class="card" enctype="multipart/form-data">
                     @csrf
                     <div class="card-header">
                         <h3 class="card-title">Buat Segment Tabungan Baru</h3>
@@ -25,10 +25,14 @@
                             <input type="number" name="target_amount" class="form-control @error('target_amount') is-invalid @enderror" placeholder="Contoh: 1000000" value="{{ old('target_amount') }}" min="0" required>
                             @error('target_amount') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
+                        {{-- PENTING: Anda memiliki validasi untuk 'unique_code' di controller, tetapi tidak ada input untuk itu di form ini.
+                             Pastikan Anda menambahkannya atau menghapusnya dari validasi jika Anda tidak ingin guru menginputnya.
+                             Jika Anda ingin guru menginputnya, tambahkan ini: --}}
+                  
                         <div class="mb-3">
-                            <label class="form-label">Kode Unik Segment</label>
-                            <input type="text" name="unique_code" class="form-control @error('unique_code') is-invalid @enderror" placeholder="Otomatis terisi atau buat sendiri" value="{{ old('unique_code', $uniqueCode ?? '') }}" required>
-                            @error('unique_code') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <label for="banner" class="form-label">Banner Segmen</label>
+                            <input type="file" class="form-control @error('banner') is-invalid @enderror" id="banner" name="banner">
+                            @error('banner') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
                     <div class="card-footer text-end">

@@ -111,7 +111,7 @@
                                     <td>{{ $transaction->updated_at->format('d M Y H:i') }}</td>
                                     <td>{{ $transaction->savingSegment->name }}</td>
                                     <td>Rp {{ number_format($transaction->amount, 0, ',', '.') }}</td>
-                                    <td>{{ $transaction->approver->name ?? 'N/A' }}</td>
+                                    <td>{{ $segment->user->name ?? 'Pengguna Tidak Dikenal' }}</td>
                                 </tr>
                             @empty
                                 <tr>

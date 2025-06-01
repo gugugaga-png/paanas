@@ -10,10 +10,12 @@ return new class extends Migration
     {
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // ID Murid yang menabung
-            $table->foreignId('saving_segment_id')->constrained()->onDelete('cascade'); // ID segmen tabungan
-            $table->decimal('amount', 10, 2); // Jumlah tabungan
-            $table->string('type')->default('deposit'); // Tipe transaksi (deposit/withdrawal - jika ada)
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('saving_segment_id')->constrained()->onDelete('cascade');
+            $table->decimal('amount', 15, 2);
+            $table->enum('type', ['deposit', 'withdrawal', 'fee', 'adjustment']);
+            $table->text('description')->nullable();
+            $table->foreignId('processed_by_user_id')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
         });
     }
