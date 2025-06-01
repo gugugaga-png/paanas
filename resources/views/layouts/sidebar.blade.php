@@ -33,6 +33,35 @@
                             <span class="nav-link-title"> Profile </span>
                         </a>
                     </li>
+                    {{-- Segment Tabungan Dropdown --}}
+                    
+@auth
+    @php
+        // Ambil segment berdasarkan peran user
+        $user = Auth::user();
+        $segments = $user->role_id === 2
+            ? \App\Models\SavingSegment::where('user_id', $user->id)->get()
+            : ($user->role_id === 3
+                ? $user->segments // relasi many-to-many siswa <-> segment
+                : collect());
+    @endphp
+
+    @if ($segments->count())
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                <span class="nav-link-title">Segment Tabungan</span>
+            </a>
+            <div class="dropdown-menu">
+                @foreach ($segments as $segment)
+                    <a href="{{ route('student.segment.detail', $segment->id) }}" class="dropdown-item">
+                        {{ $segment->name }}
+                    </a>
+                @endforeach
+            </div>
+        </li>
+    @endif
+@endauth
+
 
                     {{-- Teacher Specific Navigation --}}
                     @if(Auth::user()->role_id === 2) {{-- Assuming 2 is the role_id for Teacher --}}

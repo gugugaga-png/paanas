@@ -7,6 +7,7 @@ use App\Models\SavingSegment; // Make sure this is imported
 use Illuminate\Support\Facades\Auth; // Make sure this is imported
 use App\Models\Transaction;   // <--- ADD THIS LINE
 use Illuminate\Support\Facades\Storage; // To handle file storage
+use Carbon\Carbon;
 class StudentController extends Controller
 {
     public function dashboard()
@@ -37,6 +38,43 @@ class StudentController extends Controller
     {
         return view('student.join_segment_form');
     }
+    public function segmentDetail(SavingSegment $segment)
+{
+    $student = Auth::user();
+
+    // Get balance
+    $balance = $student->transactions()
+        ->where('saving_segment_id', $segment->id)
+        ->where('status', 'approved')
+        ->sum('amount');
+
+    // Get transactions
+    $transactions = $student->transactions()
+        ->where('saving_segment_id', $segment->id)
+        ->latest()->paginate(10);
+
+    // Statistik 7 hari terakhir
+    $labels = [];
+    $data = [];
+
+    for ($i = 6; $i >= 0; $i--) {
+        $date = Carbon::today()->subDays($i);
+        $labels[] = $date->format('d M');
+        $data[] = $student->transactions()
+            ->whereDate('created_at', $date)
+            ->where('saving_segment_id', $segment->id)
+            ->sum('amount');
+    }
+
+    $weeklyStats = [
+        'labels' => $labels,
+        'data' => $data,
+    ];
+
+    
+    return view('student.segments.detail', compact('segment', 'balance', 'transactions', 'weeklyStats'));
+    
+}
 
     public function joinSegment(Request $request)
     {
@@ -113,6 +151,8 @@ class StudentController extends Controller
         ]);
 
         // 4. Redirect with a success message
-        return redirect()->route('student.dashboard')->with('success', 'Pengajuan deposit tabungan berhasil dikirim. Menunggu validasi guru.');
+       return redirect()->route('student.segment.detail', $request->saving_segment_id)
+    ->with('success', 'Pengajuan deposit tabungan berhasil dikirim. Menunggu validasi guru.');
+
     }
 }

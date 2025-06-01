@@ -1,5 +1,3 @@
-{{-- resources/views/student/transactions/deposit_form.blade.php --}}
-
 @extends('layouts.app') {{-- Extend your main layout --}}
 
 @section('content')
@@ -78,6 +76,8 @@
                     <button type="submit" class="btn btn-primary">Ajukan Deposit</button>
                 </div>
             </form>
+           
+
         </div>
     </div>
 </div>

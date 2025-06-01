@@ -67,6 +67,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(SavingSegment::class, 'user_id');
     }
+    // app/Models/User.php
+public function segments()
+{
+    return $this->belongsToMany(\App\Models\SavingSegment::class, 'student_segments');
+}
+
 
     /**
      * Get all the individual segment balances for the user.

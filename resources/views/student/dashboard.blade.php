@@ -11,6 +11,31 @@
             </div>
         </div>
     </div>
+     <div class="mb-3">
+    <label class="form-label d-block">Pilih Segment Tabungan</label>
+    <div class="row row-cols-1 row-cols-md-4 g-3">
+        @foreach ($joinedSegments as $segment)
+            <div class="col">
+                <a href="{{ route('student.segment.detail', $segment->id) }}" class="card h-100 text-decoration-none text-body">
+                    <div class="position-relative overflow-hidden" style="padding-top: 35%;">
+                        <img
+                            src="{{ $segment->banner ? asset('storage/' . $segment->banner) : asset('images/default.png') }}"
+                            alt="Banner"
+                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center;"
+                            class="card-img-top"
+                        >
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title mb-1">{{ $segment->name }}</h5>
+                        <p class="card-text small text-muted">{{ $segment->description ?? 'Tidak ada deskripsi' }}</p>
+                        <span class="badge bg-green-lt">Kode: {{ $segment->unique_code }}</span>
+                    </div>
+                </a>
+            </div>
+        @endforeach
+    </div>
+</div>
+
 
     @if (session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">

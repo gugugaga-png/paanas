@@ -6,37 +6,59 @@ use App\Http\Controllers\Controller;
 use App\Models\SavingSegment;
 use App\Models\Transaction;
 use App\Models\User;
-use App\Models\StudentSegmentBalance; // Pastikan ini diimpor
+use App\Models\StudentSegmentBalance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class SegmentController extends Controller
 {
+    public function create()
+    {
+        $uniqueCode = Str::random(8); // kalau mau generate kode unik dulu
+        return view('teacher.segments.create', compact('uniqueCode'));
+    }
+    public function store(Request $request)
+{
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'target_amount' => 'required|numeric|min:0',
+        'banner' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+    ]);
+
+    $validated['unique_code'] = strtoupper(Str::random(8));
+
+    if ($request->hasFile('banner')) {
+        $validated['banner'] = $request->file('banner')->store('banners', 'public');
+    }
+
+    // Tambahkan teacher_id sebelum insert
+    $validated['user_id'] = auth()->id(); // ✅ benar
+// pastikan kolom di DB bernama teacher_id
+
+    SavingSegment::create($validated);
+    
+    return redirect()->route('teacher.dashboard')->with('success', 'Segment berhasil dibuat.');
+}
+
+
     public function show(SavingSegment $segment)
     {
-        // === PERBAIKI BARIS INI ===
-        // Ganti 'user' menjadi 'teacher' agar sesuai dengan definisi relasi di model SavingSegment
-        $segment->load('teacher'); // Memuat pembuat segment (guru)
+        $segment->load('teacher'); // Pastikan relasi ini ada di model
 
-        $transactions = $segment->transactions()->with('user')->latest()->get(); // Memuat transaksi
+        $transactions = $segment->transactions()->with('user')->latest()->get();
 
-        // Tambahkan ini juga jika Anda ingin menampilkan saldo siswa di segmen ini
         $studentBalances = $segment->studentBalances()->with('user')->get();
-
 
         return view('teacher.segments.show', compact('segment', 'transactions', 'studentBalances'));
     }
 
     public function showStudents(SavingSegment $segment)
     {
-        // Pilihan terbaik untuk menampilkan siswa dengan saldo mereka di segmen ini:
-        // Gunakan relasi studentBalances dari SavingSegment, lalu eager load user.
         $studentsWithBalances = $segment->studentBalances()->with('user')->get();
 
-        // Jika Anda juga ingin menampilkan siswa yang bergabung tapi belum punya saldo/transaksi,
-        // bisa gunakan $segment->joinedUsers()->get(); dan kirimkan juga ke view.
-        // Tapi untuk tabel "Daftar Siswa & Saldo Tabungan", $studentsWithBalances lebih relevan.
-
-        return view('teacher.segments.show_students', compact('segment', 'studentsWithBalances')); // <-- Kirim variabel ini
+        return view('teacher.segments.show_students', compact('segment', 'studentsWithBalances'));
     }
 }
