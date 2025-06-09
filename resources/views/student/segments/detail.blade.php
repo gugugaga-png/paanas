@@ -1,6 +1,41 @@
 @extends('layouts.app')
 
 @section('content')
+
+{{-- Modal Withdraw --}}
+<div class="modal modal-blur fade" id="withdrawModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <form action="{{ route('student.withdraw.store') }}" method="POST" class="modal-content">
+            @csrf
+            <input type="hidden" name="saving_segment_id" value="{{ $segment->id }}">
+            <div class="modal-header">
+                <h5 class="modal-title">Ajukan Penarikan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="withdraw_amount" class="form-label">Jumlah Penarikan (IDR)</label>
+                    <input
+                        type="number"
+                        name="amount"
+                        id="withdraw_amount"
+                        class="form-control @error('amount') is-invalid @enderror"
+                        min="1000"
+                        placeholder="Contoh: 25000"
+                        required
+                        value="{{ old('amount') }}">
+                    @error('amount')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Ajukan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="container-xl">
     {{-- Full Width Banner for Segment Info --}}
     <div class="card card-cover card-status-top-orange mb-4"
@@ -47,13 +82,9 @@
                 <i class="ti ti-plus fs-4"></i>
             </button>
 
-            <button
-                class="btn btn-dark d-flex align-items-center justify-content-center"
-                style="width: 48px; height: 48px;"
-                title="Withdraw"
-            >
-                <i class="ti ti-arrow-up fs-4"></i>
-            </button>
+            <button type="button" class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#withdrawModal">
+        <i class="ti ti-arrow-up fs-4"></i>
+    </button>
         </div>
     </div>
 </div>
@@ -126,7 +157,7 @@
 {{-- Modal Deposit --}}
 <div class="modal modal-blur fade" id="depositModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
-        <form action="{{ route('student.submit_deposit') }}" method="POST" enctype="multipart/form-data" class="modal-content">
+        <form action="{{ route('student.deposit.store') }}" method="POST" enctype="multipart/form-data" class="modal-content">
             @csrf
             <input type="hidden" name="saving_segment_id" value="{{ $segment->id }}">
             <div class="modal-header">

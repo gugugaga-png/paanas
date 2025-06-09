@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use Illuminate\Validation\ValidationException; // <-- Pastikan ini ada
+use Illuminate\Support\Facades\DB; // <-
 
 class StudentController extends Controller
 {
@@ -16,22 +18,31 @@ class StudentController extends Controller
         $student = Auth::user();
 
         // Mengambil segments yang diikuti dan menghitung saldo untuk setiap segment
-        $joinedSegments = $student->joinedSavingSegments()->latest()->get()->map(function ($segment) use ($student) {
-            $totalDeposits = $student->transactions()
-                ->where('saving_segment_id', $segment->id)
-                ->where('type', 'deposit') // Hanya deposit
-                ->where('status', 'approved')
-                ->sum('amount');
+        // Ambil hanya 5 segmen terbaru untuk ditampilkan di dashboard
+        $joinedSegments = $student->joinedSavingSegments()
+                                   ->latest()
+                                   ->take(5) // HANYA AMBIL 5 TERATAS UNTUK DASHBOARD
+                                   ->get()
+                                   ->map(function ($segment) use ($student) {
+                                       $totalDeposits = $student->transactions()
+                                           ->where('saving_segment_id', $segment->id)
+                                           ->where('type', 'deposit')
+                                           ->where('status', 'approved')
+                                           ->sum('amount');
 
-            $totalWithdrawals = $student->transactions()
-                ->where('saving_segment_id', $segment->id)
-                ->where('type', 'withdrawal') // Hanya withdrawal
-                ->where('status', 'approved')
-                ->sum('amount');
+                                       $totalWithdrawals = $student->transactions()
+                                           ->where('saving_segment_id', $segment->id)
+                                           ->where('type', 'withdrawal')
+                                           ->where('status', 'approved')
+                                           ->sum('amount');
 
-            $segment->balance = $totalDeposits - $totalWithdrawals; // Saldo adalah deposit dikurangi withdrawal
-            return $segment;
-        });
+                                       $segment->balance = $totalDeposits - $totalWithdrawals;
+                                       return $segment;
+                                   });
+
+        // Ambil juga total semua segmen (tanpa batasan 5) untuk keperluan checking 'show more'
+        $totalJoinedSegmentsCount = $student->joinedSavingSegments()->count();
+
 
         $pendingTransactions = $student->transactions()->where('status', 'pending')->latest()->get();
         $approvedTransactions = $student->transactions()->where('status', 'approved')->latest()->get();
@@ -76,7 +87,7 @@ class StudentController extends Controller
         // Periode untuk chart Pemasukan vs Pengeluaran (Mingguan)
         // Ambil data untuk 4 periode 7 hari terakhir
         for ($i = 0; $i < 4; $i++) {
-            $currentPeriodStart = $now->copy()->subDays((3 - $i) * 7 + 6)->startOfDay(); // Menyesuaikan untuk 4 minggu terakhir
+            $currentPeriodStart = $now->copy()->subDays((3 - $i) * 7 + 6)->startOfDay();
             $currentPeriodEnd = $now->copy()->subDays((3 - $i) * 7)->endOfDay();
 
             // Label untuk chart "Pemasukan vs Pengeluaran"
@@ -89,16 +100,15 @@ class StudentController extends Controller
                 ->sum('amount');
 
             $weeklyExpense[] = $student->transactions()
-                ->where('type', 'withdrawal') // Gunakan 'withdrawal' sesuai dengan yang Anda simpan di DB
+                ->where('type', 'withdrawal')
                 ->where('status', 'approved')
                 ->whereBetween('created_at', [$currentPeriodStart, $currentPeriodEnd])
                 ->sum('amount');
         }
 
         // Data untuk chart "Pendapatan Mingguan: Bulan Ini vs Bulan Lalu"
-        // Ini akan menampilkan 4 minggu dari bulan ini dan 4 minggu dari bulan lalu.
         for ($i = 0; $i < 4; $i++) {
-            $currentMonthWeekStart = $startThisMonth->copy()->addWeeks($i)->startOfWeek(Carbon::SUNDAY); // Asumsi minggu dimulai hari Minggu
+            $currentMonthWeekStart = $startThisMonth->copy()->addWeeks($i)->startOfWeek(Carbon::SUNDAY);
             $currentMonthWeekEnd = $currentMonthWeekStart->copy()->endOfWeek(Carbon::SATURDAY);
 
             $lastMonthWeekStart = $startLastMonth->copy()->addWeeks($i)->startOfWeek(Carbon::SUNDAY);
@@ -123,7 +133,6 @@ class StudentController extends Controller
                 ->sum('amount');
         }
 
-
         return view('student.dashboard', compact(
             'joinedSegments',
             'pendingTransactions',
@@ -136,13 +145,38 @@ class StudentController extends Controller
             'weeklyExpense',
             'weeklyIncomeThisMonth',
             'weeklyIncomeLastMonth',
-            'monthlyWeeklyLabels' // Pastikan ini di-pass
+            'monthlyWeeklyLabels',
+            'totalJoinedSegmentsCount' // Pastikan ini di-pass
         ));
     }
 
     public function joinSegmentForm()
     {
         return view('student.join_segment_form');
+    }
+
+    // Metode baru untuk menampilkan semua segmen
+    public function indexSegments()
+    {
+        $student = Auth::user();
+        $allJoinedSegments = $student->joinedSavingSegments()->latest()->get()->map(function ($segment) use ($student) {
+            $totalDeposits = $student->transactions()
+                ->where('saving_segment_id', $segment->id)
+                ->where('type', 'deposit')
+                ->where('status', 'approved')
+                ->sum('amount');
+
+            $totalWithdrawals = $student->transactions()
+                ->where('saving_segment_id', $segment->id)
+                ->where('type', 'withdrawal')
+                ->where('status', 'approved')
+                ->sum('amount');
+
+            $segment->balance = $totalDeposits - $totalWithdrawals;
+            return $segment;
+        });
+
+        return view('student.segments.index', compact('allJoinedSegments'));
     }
 
     public function segmentDetail(SavingSegment $segment)
@@ -177,12 +211,11 @@ class StudentController extends Controller
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::today()->subDays($i);
             $labels[] = $date->format('d M');
-            // Untuk chart di detail segment, mungkin lebih baik menampilkan total transaksi (deposit + withdrawal)
-            // Atau Anda bisa memisahkan menjadi deposit dan withdrawal seperti di dashboard
             $data[] = $student->transactions()
                 ->whereDate('created_at', $date)
                 ->where('saving_segment_id', $segment->id)
-                ->sum('amount'); // Ini akan menjumlahkan deposit dan withdrawal. Sesuaikan jika ingin dipisah.
+                ->where('status', 'approved') // Pastikan ini juga disaring
+                ->sum('amount');
         }
 
         $weeklyStats = [
@@ -222,8 +255,6 @@ class StudentController extends Controller
     public function depositForm()
     {
         $student = Auth::user();
-        // Get the segments the student has joined to populate a dropdown
-        // Sekarang, kita perlu menghitung saldo untuk setiap segment di sini juga agar bisa ditampilkan di form deposit (jika ada)
         $joinedSegments = $student->joinedSavingSegments()->get()->map(function ($segment) use ($student) {
             $totalDeposits = $student->transactions()
                 ->where('saving_segment_id', $segment->id)
@@ -241,26 +272,100 @@ class StudentController extends Controller
             return $segment;
         });
 
-        return view('student.transactions.deposit_form', ['segments' => $joinedSegments]); // Menggunakan 'segments'
+        return view('student.transactions.deposit_form', ['segments' => $joinedSegments]);
     }
 
-    // Metode kosong karena modal langsung memicu submitWithdraw
     public function withdrawForm()
     {
-        // Karena kita menggunakan modal di dashboard, metode ini mungkin tidak perlu mengembalikan view.
-        // Namun, jika Anda punya halaman withdraw terpisah, ini akan dibutuhkan.
-        // Untuk saat ini, kita bisa membiarkannya kosong atau redirect ke dashboard.
         return redirect()->route('student.dashboard');
     }
 
+
     public function submitWithdraw(Request $request)
+    {
+        $request->validate([
+            'saving_segment_id' => 'required|exists:saving_segments,id',
+            'amount' => 'required|numeric|min:1000', // Minimal jumlah penarikan
+        ]);
+
+        $user = Auth::user();
+        $segmentId = $request->input('saving_segment_id');
+        $withdrawalAmount = $request->input('amount');
+
+        // Pastikan siswa terdaftar di segmen ini
+        // Ganti $user->segments() menjadi $user->joinedSavingSegments()
+        if (!$user->joinedSavingSegments()->where('saving_segments.id', $segmentId)->exists()) { // <-- PERUBAHAN DI SINI
+            return redirect()->back()->with('error', 'Anda tidak terdaftar di segmen tabungan ini.');
+        }
+
+        // Ambil segmen tabungan yang dipilih
+        $segment = SavingSegment::findOrFail($segmentId);
+
+        // Hitung total saldo yang tersedia di segmen tersebut
+        // Ini adalah saldo yang sudah disetujui (deposit - withdrawal)
+        $approvedDeposits = $user->transactions() // Gunakan $user->transactions() bukan $segment->transactions() untuk memastikan scope user
+                                 ->where('saving_segment_id', $segment->id)
+                                 ->where('type', 'deposit')
+                                 ->where('status', 'approved')
+                                 ->sum('amount');
+
+        $approvedWithdrawals = $user->transactions() // Gunakan $user->transactions()
+                                    ->where('saving_segment_id', $segment->id)
+                                    ->where('type', 'withdrawal')
+                                    ->where('status', 'approved')
+                                    ->sum('amount');
+
+        $currentBalance = $approvedDeposits - $approvedWithdrawals;
+
+        // Hitung total penarikan yang masih pending untuk user dan segmen ini
+        $pendingWithdrawals = $user->transactions() // Gunakan $user->transactions()
+                                   ->where('saving_segment_id', $segment->id)
+                                   ->where('type', 'withdrawal')
+                                   ->where('status', 'pending')
+                                   ->sum('amount');
+
+        // Saldo efektif adalah saldo saat ini dikurangi penarikan yang masih pending
+        $effectiveBalance = $currentBalance - $pendingWithdrawals;
+
+        // Validasi: Apakah jumlah penarikan + semua penarikan pending melebihi saldo efektif?
+        if ($withdrawalAmount > $effectiveBalance) {
+            // Jika ada pengajuan pending, berikan pesan yang lebih spesifik
+            if ($pendingWithdrawals > 0) {
+                $errorMessage = 'Jumlah penarikan yang diminta (Rp ' . number_format($withdrawalAmount, 0, ',', '.') . ') melebihi saldo tersedia (Rp ' . number_format($currentBalance, 0, ',', '.') . ') setelah dikurangi pengajuan sebelumnya yang masih menunggu (Rp ' . number_format($pendingWithdrawals, 0, ',', '.') . '). Saldo efektif saat ini hanya Rp ' . number_format($effectiveBalance, 0, ',', '.') . '.';
+            } else {
+                $errorMessage = 'Jumlah penarikan (Rp ' . number_format($withdrawalAmount, 0, ',', '.') . ') melebihi saldo yang tersedia (Rp ' . number_format($currentBalance, 0, ',', '.') . ') di segmen ini.';
+            }
+
+            // Gunakan ValidationException untuk mengembalikan error ke formulir
+            throw ValidationException::withMessages([
+                'amount' => [$errorMessage],
+            ]);
+        }
+
+        // Jika validasi lolos, buat transaksi penarikan
+        DB::transaction(function () use ($user, $segment, $withdrawalAmount) {
+            Transaction::create([
+                'user_id' => $user->id,
+                'saving_segment_id' => $segment->id,
+                'type' => 'withdrawal',
+                'amount' => $withdrawalAmount,
+                'status' => 'pending', // Status awal adalah pending
+                // 'approved_by_id' => null, // Ini akan diisi saat disetujui oleh guru
+            ]);
+        });
+
+        return redirect()->back()->with('success', 'Pengajuan penarikan dana Anda berhasil dikirim dan menunggu validasi.');
+    }
+
+
+    public function submitDeposit(Request $request)
     {
         $request->validate([
             'saving_segment_id' => [
                 'required',
                 'exists:saving_segments,id',
                 function ($attribute, $value, $fail) {
-                    $user = auth()->user();
+                    $user = Auth::user();
                     if (!$user->joinedSavingSegments()->where('saving_segments.id', $value)->exists()) {
                         $fail('Segment tabungan yang dipilih tidak valid atau Anda belum bergabung.');
                     }
@@ -270,86 +375,23 @@ class StudentController extends Controller
         ], [
             'saving_segment_id.required' => 'Segment tabungan harus dipilih.',
             'saving_segment_id.exists' => 'Segment tabungan tidak valid.',
-            'amount.required' => 'Jumlah penarikan harus diisi.',
-            'amount.numeric' => 'Jumlah penarikan harus berupa angka.',
-            'amount.min' => 'Jumlah penarikan minimal Rp :min.',
-            'amount.max' => 'Jumlah penarikan maksimal Rp :max.',
+            'amount.required' => 'Jumlah deposit harus diisi.',
+            'amount.numeric' => 'Jumlah deposit harus berupa angka.',
+            'amount.min' => 'Jumlah deposit minimal Rp :min.',
+            'amount.max' => 'Jumlah deposit maksimal Rp :max.',
         ]);
 
-        $user = auth()->user();
+        $student = Auth::user();
 
-        // *PERBAIKAN PENTING DI SINI*
-        // Hitung saldo aktual untuk segmen yang dipilih
-        $segmentId = $request->saving_segment_id;
-
-        $totalDeposits = $user->transactions()
-            ->where('saving_segment_id', $segmentId)
-            ->where('type', 'deposit')
-            ->where('status', 'approved')
-            ->sum('amount');
-
-        $totalWithdrawals = $user->transactions()
-            ->where('saving_segment_id', $segmentId)
-            ->where('type', 'withdrawal')
-            ->where('status', 'approved')
-            ->sum('amount');
-
-        $currentBalance = $totalDeposits - $totalWithdrawals;
-
-
-        if ($request->amount > $currentBalance) {
-            return back()->withErrors(['amount' => 'Saldo tidak cukup untuk penarikan. Saldo Anda saat ini: Rp ' . number_format($currentBalance, 0, ',', '.') . '.'])->withInput();
-        }
-
-        // Buat transaksi withdrawal dengan status pending
         Transaction::create([
-            'user_id' => $user->id,
-            'saving_segment_id' => $segmentId,
+            'user_id' => $student->id,
+            'saving_segment_id' => $request->saving_segment_id,
             'amount' => $request->amount,
-            'type' => 'withdrawal', // tipe withdraw
-            'status' => 'pending', // status pending dulu, menunggu validasi guru
+            'type' => 'deposit',
+            'status' => 'pending',
         ]);
 
-        return redirect()->route('student.dashboard') // Redirect ke dashboard setelah submit withdraw
-            ->with('success', 'Pengajuan penarikan tabungan berhasil dikirim. Menunggu validasi guru.');
+        return redirect()->route('student.dashboard')
+            ->with('success', 'Pengajuan deposit tabungan berhasil dikirim. Menunggu validasi guru.');
     }
-
-
-    public function submitDeposit(Request $request)
-{
-    $request->validate([
-        'saving_segment_id' => [
-            'required',
-            'exists:saving_segments,id',
-            function ($attribute, $value, $fail) {
-                $user = Auth::user();
-                if (!$user->joinedSavingSegments()->where('saving_segments.id', $value)->exists()) {
-                    $fail('Segment tabungan yang dipilih tidak valid atau Anda belum bergabung.');
-                }
-            },
-        ],
-        'amount' => 'required|numeric|min:1000|max:1000000000',
-    ], [
-        'saving_segment_id.required' => 'Segment tabungan harus dipilih.',
-        'saving_segment_id.exists' => 'Segment tabungan tidak valid.',
-        'amount.required' => 'Jumlah deposit harus diisi.',
-        'amount.numeric' => 'Jumlah deposit harus berupa angka.',
-        'amount.min' => 'Jumlah deposit minimal Rp :min.',
-        'amount.max' => 'Jumlah deposit maksimal Rp :max.',
-    ]);
-
-    $student = Auth::user();
-
-    Transaction::create([
-        'user_id' => $student->id,
-        'saving_segment_id' => $request->saving_segment_id,
-        'amount' => $request->amount,
-        'type' => 'deposit',
-        'status' => 'pending',
-    ]);
-
-    // Redirect ke dashboard setelah submit deposit
-    return redirect()->route('student.dashboard')
-        ->with('success', 'Pengajuan deposit tabungan berhasil dikirim. Menunggu validasi guru.');
-}
 }

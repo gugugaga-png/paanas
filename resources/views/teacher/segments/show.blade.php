@@ -160,45 +160,55 @@
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        const currentBalance = {{ $currentBalance }};
+        // currentBalance di sini sudah saldo bersih dari controller (setoran - penarikan)
+        const currentBalance = {{ $currentBalance }}; 
         const target = {{ $segment->target_amount }};
         const remaining = Math.max(target - currentBalance, 0);
 
         const chartContainer = document.querySelector("#segment-balance-chart");
-        if (!chartContainer || (currentBalance === 0 && target === 0 && (target === 0 && currentBalance === 0))) {
+        // Kondisi ini sudah cukup untuk tidak merender chart jika tidak ada data sama sekali
+        if (!chartContainer || (currentBalance === 0 && target === 0)) {
             return; 
         }
 
-        const contributions = @json($contributions);
+        const contributions = @json($contributions); // Ini sudah berisi saldo bersih per siswa
 
-        const meaningfulContributions = contributions.filter(c => c.amount > 0);
-
-        let seriesData = meaningfulContributions.map(c => c.amount);
-        let labelsData = meaningfulContributions.map(c => c.name);
+        // Kita hanya ingin menampilkan kontribusi positif siswa di chart
+        // Data 'contributions' dari controller sudah dihitung sebagai saldo bersih (deposit - withdrawal) per siswa
+        // dan hanya mengandung siswa dengan netContribution > 0.
+        let seriesData = contributions.map(c => c.amount);
+        let labelsData = contributions.map(c => c.name);
         
+        // Tambahkan 'Sisa Target' jika ada dan target > 0
         if (remaining > 0 && target > 0) {
             seriesData.push(remaining);
             labelsData.push("Sisa Target");
+        } else if (currentBalance >= target && target > 0) {
+            // Jika saldo sudah mencapai atau melebihi target, tidak perlu "Sisa Target"
+            // Tapi jika target_amount adalah 0 dan ada currentBalance, ini akan memicu chart penuh.
+            // Biarkan saja, karena `remaining` akan 0
         }
+
 
         const tablerColors = [
-            tabler.getColor("green"),      
-            tabler.getColor("blue"),       
-            tabler.getColor("yellow"),     
-            tabler.getColor("cyan"),       
-            tabler.getColor("purple"),     
-            tabler.getColor("orange"),     
-            tabler.getColor("pink"),       
-            tabler.getColor("red"),        
-            tabler.getColor("gray-300"),   
+            tabler.getColor("green"),       
+            tabler.getColor("blue"),        
+            tabler.getColor("yellow"),      
+            tabler.getColor("cyan"),        
+            tabler.getColor("purple"),      
+            tabler.getColor("orange"),      
+            tabler.getColor("pink"),        
+            tabler.getColor("red"),         
+            tabler.getColor("gray-300"),    
         ];
 
-        const assignedColors = meaningfulContributions.map((_, index) => tablerColors[index % (tablerColors.length - 1)]); 
+        // Alokasikan warna untuk setiap kontribusi siswa dan sisa target
+        let assignedColors = contributions.map((_, index) => tablerColors[index % (tablerColors.length - 1)]); 
         if (remaining > 0 && target > 0) {
-            assignedColors.push(tabler.getColor("red")); 
+            assignedColors.push(tabler.getColor("red")); // Warna khusus untuk "Sisa Target"
         }
         
-        // Hitung persentase terkumpul
+        // Hitung persentase terkumpul (sudah benar)
         const percentageAchieved = (target > 0) ? ((currentBalance / target) * 100).toFixed(1) : (currentBalance > 0 ? 100 : 0).toFixed(1);
 
         new ApexCharts(chartContainer, { 
@@ -208,7 +218,7 @@
                 toolbar: { show: false },
                 zoom: { enabled: false }
             },
-            series: seriesData,
+            series: seriesData, // Ini sudah berisi data saldo bersih dari masing-masing kontributor
             labels: labelsData,
             colors: assignedColors,
             legend: {

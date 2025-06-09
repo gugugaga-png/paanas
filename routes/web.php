@@ -31,6 +31,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profile/editprofile', [ProfileController::class, 'edit'])->name('profile.editprofile');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });
 
 require __DIR__.'/auth.php';
@@ -47,30 +50,35 @@ Route::middleware(['auth', 'verified', 'is_teacher'])->prefix('teacher')->name('
     Route::get('/mail', [MailController::class, 'index'])->name('mail.index');
     Route::get('/segments/{segment}/mail', [MailController::class, 'indexBySegment'])->name('segments.mail.index');
 
-    Route::post('/transactions/{transaction}/approve', [MailController::class, 'approve'])->name('transactions.approve');
-    Route::post('/transactions/{transaction}/reject', [MailController::class, 'reject'])->name('transactions.reject');
+    // --- PERBAIKAN PENTING DI SINI ---
+    Route::post('/transactions/{transaction}/approve', [TeacherController::class, 'approveTransaction'])->name('transactions.approve');
+    Route::post('/transactions/{transaction}/reject', [TeacherController::class, 'rejectTransaction'])->name('transactions.reject');
+    // --- AKHIR PERBAIKAN PENTING ---
 });
-
 // Grup rute untuk peran Siswa
 // routes/web.php
 // routes/web.php
 
-Route::middleware(['auth', 'verified', 'is_student'])->prefix('student')->name('student.')->group(function () {
-    Route::get('/dashboard', [App\Http\Controllers\StudentController::class, 'dashboard'])->name('dashboard');
-    Route::get('/join-segment', [App\Http\Controllers\StudentController::class, 'joinSegmentForm'])->name('join.segment.form');
-    Route::post('/join-segment', [App\Http\Controllers\StudentController::class, 'joinSegment'])->name('join.segment');
+// ... (rute lainnya) ...
 
-    // Rute Deposit
-    Route::get('/deposit', [App\Http\Controllers\StudentController::class, 'depositForm'])->name('deposit.form'); // Form untuk deposit
-    Route::post('/deposit', [App\Http\Controllers\StudentController::class, 'submitDeposit'])->name('deposit.store'); // Submit deposit
+Route::middleware(['auth', 'is_student'])->group(function () {
+    Route::get('/student/dashboard', [App\Http\Controllers\StudentController::class, 'dashboard'])->name('student.dashboard');
+    Route::get('/student/join-segment-form', [App\Http\Controllers\StudentController::class, 'joinSegmentForm'])->name('student.join_segment_form');
+    Route::post('/student/join-segment', [App\Http\Controllers\StudentController::class, 'joinSegment'])->name('student.join_segment');
 
-    // Rute Withdraw
-    Route::get('/withdraw', [App\Http\Controllers\StudentController::class, 'withdrawForm'])->name('withdraw.form');
-    Route::post('/withdraw', [App\Http\Controllers\StudentController::class, 'submitWithdraw'])->name('withdraw.store');
+    // Rute untuk menampilkan semua segmen  
+    Route::get('/student/segments/join', [StudentController::class, 'showJoinSegmentForm'])->name('student.join.segment.form');
+    Route::get('/student/segments', [App\Http\Controllers\StudentController::class, 'indexSegments'])->name('student.segments.index');
 
-    Route::get('/segments/{segment}', [App\Http\Controllers\StudentController::class, 'segmentDetail'])->name('segment.detail');
+    Route::get('/student/segments/{segment}', [App\Http\Controllers\StudentController::class, 'segmentDetail'])->name('student.segment.detail');
+
+    Route::get('/student/deposit', [App\Http\Controllers\StudentController::class, 'depositForm'])->name('student.deposit.form');
+    Route::post('/student/deposit', [App\Http\Controllers\StudentController::class, 'submitDeposit'])->name('student.deposit.store');
+    Route::get('/student/withdraw', [App\Http\Controllers\StudentController::class, 'withdrawForm'])->name('student.withdraw.form');
+   Route::post('/student/withdraw', 'App\Http\Controllers\StudentController@submitWithdraw')->name('student.withdraw.store');
 });
 
+// ... (rute lainnya) ...
 // Logika pengalihan dashboard utama (menggunakan role_id langsung)
 Route::get('/dashboard', function () {
     $user = auth()->user();

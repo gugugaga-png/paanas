@@ -1,16 +1,18 @@
 <?php
 
+
 namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
 use App\Models\SavingSegment;
 use App\Models\Transaction;
 use App\Models\User;
-use App\Models\StudentSegmentBalance; // Pastikan model ini benar
+use App\Models\StudentSegmentBalance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+
 
 class SegmentController extends Controller
 {

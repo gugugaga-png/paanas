@@ -2,34 +2,45 @@
 
 @section('content')
 <div class="modal fade" id="joninsegmentModal" tabindex="-1" aria-labelledby="joninsegmentModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <form action="{{ route('student.join_segment') }}" method="POST">
-                @csrf {{-- CSRF token is crucial for form security --}}
+    <div class="modal-dialog">
+        <form action="{{ route('student.join_segment') }}" method="POST">
+            @csrf {{-- CSRF token is crucial for form security --}}
 
-                <div class="mb-3">
-                    <label class="form-label" for="unique_code">Kode Unik Segment</label>
-                    <input type="text"
-                           name="unique_code"
-                           id="unique_code"
-                           class="form-control @error('unique_code') is-invalid @enderror"
-                           placeholder="Masukkan kode unik dari guru"
-                           value="{{ old('unique_code') }}"
-                           required
-                           maxlength="8"
-                           minlength="8"
-                           pattern="[A-Za-z0-9]{8}" {{-- Optional: enforce alphanumeric 8 chars --}}
-                           title="Kode unik harus 8 karakter alfanumerik (huruf dan angka)">
-                    @error('unique_code')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="joninsegmentModalLabel">Gabung Segment Tabungan</h5>
                 </div>
 
-                <div class="form-footer">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="unique_code" class="form-label">Kode Unik Segment</label>
+                        <input
+                            type="text"
+                            name="unique_code"
+                            id="unique_code"
+                            class="form-control @error('unique_code') is-invalid @enderror"
+                            placeholder="Masukkan kode unik dari guru"
+                            value="{{ old('unique_code') }}"
+                            required
+                            maxlength="8"
+                            minlength="8"
+                            pattern="[A-Za-z0-9]{8}"
+                            title="Kode unik harus 8 karakter alfanumerik (huruf dan angka)"
+                        >
+                        @error('unique_code')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="modal-footer">
                     <button type="submit" class="btn btn-primary">Cari & Gabung</button>
                 </div>
-            </form>
-        </div>
+            </div>
+        </form>
     </div>
+</div>
+
 <div class="modal fade" id="depositModal" tabindex="-1" aria-labelledby="depositModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <form action="{{ route('student.deposit.store') }}" method="POST" id="depositForm">
@@ -107,13 +118,12 @@
 </div>
 
 <div class="container-xl">
-    {{-- Row Utama dengan 3 Kolom --}}
-    <div class="row g-4">
+    <div class="row g-4 align-items-stretch"> {{-- Tetap gunakan align-items-stretch pada baris utama --}}
 
-        {{-- Kolom 1 --}}
-        <div class="col-lg-4">
+        {{-- KOLOM KIRI: Saldo dan Segment (col-lg-4) --}}
+        <div class="col-lg-4 d-flex flex-column"> {{-- Tambahkan d-flex flex-column di sini --}}
             {{-- Saldo Total --}}
-            <div class="card">
+            <div class="card mb-4"> {{-- Hapus h-100 di sini, biarkan mb-4 untuk margin bawah --}}
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <div>
@@ -127,33 +137,31 @@
                         </div>
                         <div class="d-flex gap-2">
                             <div class="d-flex gap-2">
-    <button type="button" class="btn btn-dark btn-pill" data-bs-toggle="modal" data-bs-target="#depositModal"> {{-- Diubah: Menjadi tombol untuk membuka modal --}}
-        Deposit
-    </button>
-    <button type="button" class="btn btn-outline-dark btn-pill" data-bs-toggle="modal" data-bs-target="#withdrawModal">
-        Withdraw
-    </button>
-</div>
-                    
+                                <button type="button" class="btn btn-dark btn-pill" data-bs-toggle="modal" data-bs-target="#depositModal">
+                                    Deposit
+                                </button>
+                                <button type="button" class="btn btn-outline-dark btn-pill" data-bs-toggle="modal" data-bs-target="#withdrawModal">
+                                    Withdraw
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             {{-- Daftar Segment --}}
-            <div class="card mt-4">
+            <div class="card flex-grow-1"> {{-- Tambahkan flex-grow-1 di sini --}}
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <div class="fs-3">Daftar Segment</div>
-                    <a href="{{ route('student.join.segment.form') }}" class="btn btn-dark btn-pill"><i class="ti ti-plus"></i></a> {{-- Diubah: Tambahkan link ke rute join segment --}}
+                    <button type="button" data-bs-toggle="modal" data-bs-target="#joninsegmentModal" class="btn btn-dark btn-pill"><i class="ti ti-plus"></i></button>
                 </div>
-
                 <ul class="list-group list-group-flush">
                     @forelse ($joinedSegments as $segment)
                         <li class="list-group-item px-3 py-2 d-flex justify-content-between align-items-center">
                             <a href="{{ route('student.segment.detail', $segment->id) }}"
                                class="d-flex align-items-center text-decoration-none text-body flex-grow-1 gap-3">
                                 <img src="{{ $segment->banner ? asset('storage/' . $segment->banner) : asset('images/default.png') }}"
-                                     alt="Banner" class="avatar avatar-md rounded-circle" style="object-fit: cover;">
+                                    alt="Banner" class="avatar avatar-md rounded-circle" style="object-fit: cover;">
                                 <div>
                                     <div class="fw-bold fs-5 mb-1">{{ $segment->name }}</div>
                                     <div class="text-primary small">{{ $segment->unique_code }}</div>
@@ -166,28 +174,31 @@
                     @empty
                         <li class="list-group-item text-center text-muted">Belum bergabung dengan segment tabungan manapun.</li>
                     @endforelse
+
+                    {{-- Tombol Show More --}}
+                    @if ($totalJoinedSegmentsCount > 5)
+                        <li class="list-group-item text-center">
+                            <a href="{{ route('student.segments.index') }}" class="btn btn-ghost-primary">Lihat Semua Segmen ({{ $totalJoinedSegmentsCount - 5 }} lainnya)</a>
+                        </li>
+                    @endif
                 </ul>
             </div>
-
         </div>
 
-        {{-- Kolom 2 --}}
-        <div class="col-lg-4">
-            {{-- Chart Pemasukan vs Pengeluaran --}}
-            <div class="card h-100">
+        {{-- KOLOM KANAN: Chart dan Riwayat Transaksi (col-lg-8) --}}
+        <div class="col-lg-8 d-flex flex-column"> {{-- Tambahkan d-flex flex-column di sini --}}
+            {{-- Kolom Chart --}}
+            <div class="card mb-4"> {{-- Hapus h-100 di sini, biarkan mb-4 untuk margin bawah --}}
                 <div class="card-header">
                     <h3 class="card-title">Pemasukan vs Pengeluaran Mingguan</h3>
                 </div>
                 <div class="card-body">
-                    <canvas id="incomeExpenseBarChart" height="200"></canvas>
+                    <canvas id="incomeExpenseBarChart" height="100"></canvas>
                 </div>
             </div>
-        </div>
 
-        {{-- Kolom 3 --}}
-        <div class="col-lg-4">
-            {{-- Tabel Transaksi --}}
-            <div class="card h-100">
+            {{-- Kolom Tabel Transaksi --}}
+            <div class="card flex-grow-1"> {{-- Tambahkan flex-grow-1 di sini --}}
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="card-title mb-0">Riwayat Transaksi Tabungan</h3>
                     <select id="filterStatus" class="form-select w-auto">
@@ -209,6 +220,7 @@
                             </tr>
                         </thead>
                         <tbody>
+                            {{-- ... transaksi ... --}}
                             @foreach ($pendingTransactions as $transaction)
                                 <tr data-status="pending">
                                     <td>{{ $transaction->created_at->format('d M Y H:i') }}</td>
@@ -241,58 +253,8 @@
                 </div>
             </div>
         </div>
-
     </div>
-
-    {{-- Chart Pendapatan Mingguan --}}
-    <div class="card mt-4">
-        <div class="card-header">
-            <h3 class="card-title">Pendapatan Mingguan: Bulan Ini vs Bulan Lalu</h3>
-        </div>
-        <div class="card-body">
-            <canvas id="weeklyIncomeBarChart" height="100"></canvas> {{-- ID Disesuaikan --}}
-        </div>
-    </div>
-
-    {{-- Segment Pilihan --}}
-    <div class="mb-4 mt-4">
-        <label class="form-label d-block">Pilih Segment Tabungan</label>
-        <div class="row row-cols-1 row-cols-md-4 g-3">
-            @foreach ($joinedSegments as $segment)
-                <div class="col">
-                    <a href="{{ route('student.segment.detail', $segment->id) }}" class="card h-100 text-decoration-none text-body">
-                        <div class="position-relative overflow-hidden" style="padding-top: 35%;">
-                            <img src="{{ $segment->banner ? asset('storage/' . $segment->banner) : asset('images/default.png') }}"
-                                 alt="Banner"
-                                 class="card-img-top"
-                                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;">
-                        </div>
-                        <div class="card-body">
-                            <h5 class="card-title mb-1">{{ $segment->name }}</h5>
-                            <p class="card-text small text-muted">{{ $segment->description ?? 'Tidak ada deskripsi' }}</p>
-                            <span class="badge bg-green-lt">Kode: {{ $segment->unique_code }}</span>
-                        </div>
-                    </a>
-                </div>
-            @endforeach
-        </div>
-    </div>
-
-    {{-- Alerts --}}
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-    @if (session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-
-</div>
+</div>  
 @endsection
 
 @push('scripts')
