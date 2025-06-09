@@ -23,7 +23,8 @@ use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
     return view('welcome');
-});
+})->name('welcome');
+
 
 // Grup rute untuk profil pengguna yang terautentikasi
 Route::middleware('auth')->group(function () {
@@ -51,22 +52,24 @@ Route::middleware(['auth', 'verified', 'is_teacher'])->prefix('teacher')->name('
 });
 
 // Grup rute untuk peran Siswa
-Route::middleware(['auth', 'verified', 'is_student'])->prefix('student')->name('student.')->group(function () {
-    Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
-    Route::get('/join-segment', [StudentController::class, 'joinSegmentForm'])->name('join_segment_form');
-    Route::post('/join-segment', [StudentController::class, 'joinSegment'])->name('join_segment');
-    Route::get('/deposit', [StudentController::class, 'depositForm'])->name('deposit.form');
-    
-    // Sebelumnya: '/student/segment/{segment}/deposit'
-    Route::get('/segment/{segment}/deposit', [TransactionController::class, 'create'])
-        ->name('deposit.segment');
-    
-    Route::post('/deposit', [StudentController::class, 'submitDeposit'])->name('submit_deposit');
-    
-    // Sebelumnya: '/student/segments/{segment}'
-    Route::get('/segments/{segment}', [StudentController::class, 'segmentDetail'])->name('segment.detail');
-});
+// routes/web.php
+// routes/web.php
 
+Route::middleware(['auth', 'verified', 'is_student'])->prefix('student')->name('student.')->group(function () {
+    Route::get('/dashboard', [App\Http\Controllers\StudentController::class, 'dashboard'])->name('dashboard');
+    Route::get('/join-segment', [App\Http\Controllers\StudentController::class, 'joinSegmentForm'])->name('join.segment.form');
+    Route::post('/join-segment', [App\Http\Controllers\StudentController::class, 'joinSegment'])->name('join.segment');
+
+    // Rute Deposit
+    Route::get('/deposit', [App\Http\Controllers\StudentController::class, 'depositForm'])->name('deposit.form'); // Form untuk deposit
+    Route::post('/deposit', [App\Http\Controllers\StudentController::class, 'submitDeposit'])->name('deposit.store'); // Submit deposit
+
+    // Rute Withdraw
+    Route::get('/withdraw', [App\Http\Controllers\StudentController::class, 'withdrawForm'])->name('withdraw.form');
+    Route::post('/withdraw', [App\Http\Controllers\StudentController::class, 'submitWithdraw'])->name('withdraw.store');
+
+    Route::get('/segments/{segment}', [App\Http\Controllers\StudentController::class, 'segmentDetail'])->name('segment.detail');
+});
 
 // Logika pengalihan dashboard utama (menggunakan role_id langsung)
 Route::get('/dashboard', function () {

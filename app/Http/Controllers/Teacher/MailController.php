@@ -13,27 +13,23 @@ use App\Models\SavingSegment;
 class MailController extends Controller
 {
    
-    public function index(Request $request, SavingSegment $segment = null)
-    {
+   public function index(Request $request, SavingSegment $segment = null)
+{
+    $query = Transaction::with(['user', 'savingSegment'])
+                        ->where('status', 'pending')
+                        ->whereHas('savingSegment', function ($q) {
+                            $q->where('user_id', auth()->id());
+                        });
 
-        $query = Transaction::where('status', 'pending')
-                            ->with(['user', 'savingSegment']);
-
-        if ($segment) {
-
-            $query->where('saving_segment_id', $segment->id);
-        } else {
-
-            $query->whereHas('savingSegment', function ($q) {
-                $q->where('user_id', auth()->id());
-            });
-        }
-
-        $pendingTransactions = $query->latest()->get();
-
-       
-        return view('teacher.mail.index', compact('pendingTransactions', 'segment'));
+    if ($segment) {
+        $query->where('saving_segment_id', $segment->id);
     }
+
+    $pendingTransactions = $query->latest()->get();
+
+    return view('teacher.mail.index', ['pendingTransactions' => $pendingTransactions, 'savingSegment' => $segment]);
+}
+
 
  
     public function approve(Transaction $transaction)

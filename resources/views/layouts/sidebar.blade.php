@@ -86,9 +86,9 @@
                     {{-- Student Specific Navigation --}}
                     @if(Auth::user()->role_id === 3) {{-- Assuming 3 is the role_id for Student --}}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('student.join_segment_form') }}">
-                                <span class="nav-link-title"> Join Segment </span>
-                            </a>
+                            <a class="nav-link" href="{{ route('student.join.segment.form') }}">
+    <span class="nav-link-title"> Join Segment </span>
+</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('student.deposit.form') }}">

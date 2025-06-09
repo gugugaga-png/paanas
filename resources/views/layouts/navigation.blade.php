@@ -83,7 +83,7 @@
                         </a>
                     </li>
                     <li class="nav-item @if(request()->routeIs('student.join_segment_form')) active @endif">
-    <a class="nav-link" href="{{ route('student.join_segment_form') }}">
+    <a class="nav-link" href="{{ route('student.join.segment.form') }}">
         <span class="nav-link-icon">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 12h-4" /><path d="M13 12h-3" /><path d="M8 7v10" /><path d="M20 6h-6a1 1 0 0 0 -1 1v10a1 1 0 0 0 1 1h6a1 1 0 0 0 1 -1v-10a1 1 0 0 0 -1 -1z" /></svg>
         </span>

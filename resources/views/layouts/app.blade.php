@@ -19,9 +19,10 @@
 <body class="layout-fluid">
     <div class="page">
         {{-- Sidebar (jika tidak di halaman otentikasi) --}}
-        @if (!in_array(Route::currentRouteName(), ['login', 'register', 'password.request', 'password.reset']))
-            @include('layouts.sidebar')
-        @endif
+        @if (!in_array(Route::currentRouteName(), ['welcome', 'register', 'password.request', 'password.reset']))
+    @include('layouts.sidebar')
+@endif
+
 
         <div class="page-wrapper">
             {{-- Navbar / Top Navigation (jika tidak di halaman otentikasi) --}}
@@ -52,7 +53,7 @@
             </div> --}}
 
             <div class="page-body">
-                <div class="container-xl"> {{-- Menggunakan container-xl untuk konten utama --}}
+                <div class="container-xl px-3"> {{-- Menggunakan container-xl untuk konten utama --}}
                     @yield('content')
                 </div>
             </div>
@@ -62,8 +63,9 @@
     </div>
 
     {{-- Menggunakan versi spesifik yang sama dengan CSS --}}
-    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/js/tabler.min.js"></script>
-    
     @stack('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/js/tabler.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
 </body>
 </html>
