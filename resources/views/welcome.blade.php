@@ -15,7 +15,6 @@
     <div class="row">
         <div class="col-5">
             <img src="{{ asset('images/chart.svg') }}" alt="Banner">
-            <img src="{{ asset('images/statchart.svg') }}" alt="Banner">
         </div>
         <div class="col-7">
             <div style="width: 60rem">
