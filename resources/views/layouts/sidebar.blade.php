@@ -1,15 +1,15 @@
-<aside class="navbar navbar-vertical navbar-expand-sm position-absolute" data-bs-theme="light">
+<aside class="navbar navbar-vertical navbar-expand-lg position-absolute" data-bs-theme="light">
     <div class="container-fluid">
         <button
-  class="navbar-toggler"
-  type="button"
-  data-bs-toggle="offcanvas"
-  data-bs-target="#offcanvas-sidebar"
-  aria-controls="offcanvas-sidebar"
-  aria-label="Toggle sidebar"
->
-  <span class="navbar-toggler-icon"></span>
-</button>
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#offcanvas-sidebar"
+            aria-controls="offcanvas-sidebar"
+            aria-label="Toggle sidebar"
+        >
+            <span class="navbar-toggler-icon"></span>
+        </button>
 
         <h1 class="navbar-brand navbar-brand-autodark">
             <a href="{{ url('/') }}">

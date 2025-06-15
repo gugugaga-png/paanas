@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers; // <--- INI MASALAHNYA!
+namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\SavingSegment;
@@ -10,56 +10,65 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\StudentSegmentBalance; 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException; // Pastikan ini ada
+use Carbon\Carbon; // Pastikan Carbon diimpor jika digunakan di dashboard
+
 class TeacherController extends Controller
 {
     public function dashboard()
-{
-    $teacher = auth()->user();
+    {
+        $teacher = auth()->user();
 
-    $segments = $teacher->savingSegments()->latest()->get();
+        // Mengambil segmen yang dibuat oleh guru dan menghitung saldo saat ini
+        $segments = $teacher->savingSegments()->latest()->get();
 
-    $segments = $segments->map(function ($segment) {
-    $segment->currentBalance = $segment->transactions()
-                                       ->where('status', 'approved')
-                                       ->sum('amount');
+        $segments = $segments->map(function ($segment) {
+            // Hitung total setoran yang disetujui untuk segmen ini
+            $totalDeposits = $segment->transactions()
+                                    ->where('type', 'deposit')
+                                    ->where('status', 'approved')
+                                    ->sum('amount');
 
-    // Pakai field yang benar: target_amount
-    $segment->totalTarget = $segment->target_amount ?? 1;
+            // Hitung total penarikan yang disetujui untuk segmen ini
+            $totalWithdrawals = $segment->transactions()
+                                     ->where('type', 'withdrawal')
+                                     ->where('status', 'approved')
+                                     ->sum('amount');
 
-    return $segment;
-});
+            // Saldo saat ini adalah total setoran dikurangi total penarikan
+            $segment->currentBalance = $totalDeposits - $totalWithdrawals;
 
+            // Pastikan menggunakan kolom target_amount dari DB
+            $segment->totalTarget = $segment->target_amount ?? 1; // Pastikan tidak nol untuk mencegah pembagian dengan nol
 
-    $pendingTransactions = Transaction::whereIn('saving_segment_id', $segments->pluck('id'))
-                                     ->where('status', 'pending')
-                                     ->latest()
-                                     ->get();
+            return $segment;
+        });
 
-    $approvedTransactions = Transaction::whereIn('saving_segment_id', $segments->pluck('id'))
-                                      ->where('status', 'approved')
-                                      ->latest()
-                                      ->get();
+        $pendingTransactions = Transaction::whereIn('saving_segment_id', $segments->pluck('id'))
+                                           ->where('status', 'pending')
+                                           ->latest()
+                                           ->get();
 
-    $rejectedTransactions = Transaction::whereIn('saving_segment_id', $segments->pluck('id'))
-                                      ->where('status', 'rejected')
-                                      ->latest()
-                                      ->get();
+        $approvedTransactions = Transaction::whereIn('saving_segment_id', $segments->pluck('id'))
+                                            ->where('status', 'approved')
+                                            ->latest()
+                                            ->get();
 
-    $totalTarget = $segments->sum('totalTarget');
+        $rejectedTransactions = Transaction::whereIn('saving_segment_id', $segments->pluck('id'))
+                                            ->where('status', 'rejected')
+                                            ->latest()
+                                            ->get();
 
-    return view('teacher.dashboard', compact(
-        'segments',
-        'pendingTransactions',
-        'approvedTransactions',
-        'rejectedTransactions',
-        'totalTarget'
-    ));
-}
+        $totalTarget = $segments->sum('totalTarget');
 
-
-
-
-    
+        return view('teacher.dashboard', compact(
+            'segments',
+            'pendingTransactions',
+            'approvedTransactions',
+            'rejectedTransactions',
+            'totalTarget'
+        ));
+    }
 
     public function showStudents(SavingSegment $segment)
     {
@@ -100,7 +109,6 @@ class TeacherController extends Controller
         }
 
         // Ambil semua transaksi yang disetujui untuk perhitungan saldo dan chart
-        // Pastikan Anda hanya mengambil transaksi dengan status 'approved'
         $approvedTransactions = $segment->transactions()
                                        ->where('status', 'approved')
                                        ->get();
@@ -111,25 +119,23 @@ class TeacherController extends Controller
         // =======================================================================
         $totalDeposits = $approvedTransactions->where('type', 'deposit')->sum('amount');
         $totalWithdrawals = $approvedTransactions->where('type', 'withdrawal')->sum('amount');
-        $currentBalance = $totalDeposits - $totalWithdrawals; // <-- INI PENTING!
-        
+        $currentBalance = $totalDeposits - $totalWithdrawals;
+
         // =======================================================================
         // Bagian KRITIS: Menghitung Kontribusi per Siswa (contributions)
         // Ini juga harus menghitung saldo bersih (deposit - withdrawal) per siswa
         // =======================================================================
         $contributions = [];
-        // Asumsi relasi 'joinedStudents' sudah ada di model SavingSegment
-        // Jika tidak, Anda perlu cara lain untuk mendapatkan daftar siswa yang bergabung.
         $segmentStudents = $segment->joinedStudents ?? User::whereHas('savingSegments', function($q) use ($segment){
             $q->where('saving_segments.id', $segment->id);
         })->where('role_id', 3)->get();
 
         foreach ($segmentStudents as $student) {
             $studentDeposits = $student->transactions()
-                                       ->where('saving_segment_id', $segment->id)
-                                       ->where('type', 'deposit')
-                                       ->where('status', 'approved')
-                                       ->sum('amount');
+                                        ->where('saving_segment_id', $segment->id)
+                                        ->where('type', 'deposit')
+                                        ->where('status', 'approved')
+                                        ->sum('amount');
 
             $studentWithdrawals = $student->transactions()
                                           ->where('saving_segment_id', $segment->id)
@@ -137,7 +143,7 @@ class TeacherController extends Controller
                                           ->where('status', 'approved')
                                           ->sum('amount');
 
-            $netContribution = $studentDeposits - $studentWithdrawals; // <-- INI BENAR, DI DALAM LOOP!
+            $netContribution = $studentDeposits - $studentWithdrawals; 
 
             // Hanya sertakan siswa dengan kontribusi bersih positif untuk chart
             if ($netContribution > 0) {
@@ -155,21 +161,12 @@ class TeacherController extends Controller
 
         // Ambil SEMUA transaksi untuk segmen ini (untuk riwayat transaksi)
         $transactions = $segment->transactions()
-                                 ->with('user')
-                                 ->latest()
-                                 ->paginate(10);
+                                ->with('user')
+                                ->latest()
+                                ->paginate(10);
 
-        // Debugging: Hentikan eksekusi dan tampilkan variabel
-        dd([
-            'segment' => $segment->toArray(),
-            'totalDeposits' => $totalDeposits,
-            'totalWithdrawals' => $totalWithdrawals,
-            'currentBalanceCalculated' => $currentBalance,
-            'transactions' => $transactions->toArray(), // Untuk melihat data transaksi yang dipaginasi
-            'contributions' => $contributions,
-        ]);
         // Pastikan Anda mengembalikan view setelah debugging selesai!
-        // return view('teacher.segments.show', compact('segment', 'currentBalance', 'contributions', 'transactions'));
+        return view('teacher.segments.show', compact('segment', 'currentBalance', 'contributions', 'transactions'));
     }
 
     public function createSegment()
@@ -230,65 +227,73 @@ class TeacherController extends Controller
     }
 
     public function approveTransaction(Transaction $transaction)
-{
-    // Pastikan pengguna yang login memiliki hak untuk menyetujui transaksi ini
-    if (auth()->user()->id !== $transaction->savingSegment->user_id) {
-        abort(403, 'Anda tidak memiliki akses untuk menyetujui transaksi ini.');
-    }
-
-    // Simpan status lama sebelum diubah, jika perlu untuk logika rollback/reversal
-    // $oldStatus = $transaction->status; 
-
-    $transaction->status = 'approved';
-    $transaction->save();
-
-    // --- INI ADALAH BAGIAN PENTING YANG HARUS DITAMBAHKAN ---
-    // Temukan atau buat entri saldo siswa untuk segmen ini
-    $studentBalance = StudentSegmentBalance::firstOrCreate(
-        [
-            'user_id' => $transaction->user_id,
-            'saving_segment_id' => $transaction->saving_segment_id,
-        ],
-        ['balance' => 0] // Jika baru dibuat, saldo awal 0
-    );
-
-    // Update saldo berdasarkan tipe transaksi yang disetujui
-    if ($transaction->type === 'deposit') {
-        $studentBalance->balance += $transaction->amount;
-    } elseif ($transaction->type === 'withdrawal') {
-        // Penting: Kurangi saldo jika ini adalah penarikan yang disetujui
-        $studentBalance->balance -= $transaction->amount;
-    }
-    $studentBalance->save();
-    // --- AKHIR BAGIAN PENTING ---
-
-    return back()->with('success', 'Transaksi berhasil disetujui!');
-}
-
-public function rejectTransaction(Transaction $transaction)
-{
-    // Pastikan pengguna yang login memiliki hak untuk menolak transaksi ini
-    if (auth()->user()->id !== $transaction->savingSegment->user_id) {
-        abort(403, 'Anda tidak memiliki akses untuk menolak transaksi ini.');
-    }
-
-    // Penting: Jika transaksi sebelumnya sudah disetujui (misalnya withdrawal)
-    // dan sekarang ditolak, Anda mungkin perlu mengembalikan saldo yang sudah terkurang.
-    // Ini adalah logika yang lebih kompleks. Untuk kasus sederhana, jika hanya 'pending' yang bisa ditolak:
-    if ($transaction->status === 'approved' && $transaction->type === 'withdrawal') {
-        // Jika penarikan yang sudah disetujui sekarang ditolak, kembalikan saldonya
-        $studentBalance = StudentSegmentBalance::where('user_id', $transaction->user_id)
-                                                ->where('saving_segment_id', $transaction->saving_segment_id)
-                                                ->first();
-        if ($studentBalance) {
-            $studentBalance->balance += $transaction->amount; // Tambahkan kembali
-            $studentBalance->save();
+    {
+        // Pastikan pengguna yang login memiliki hak untuk menyetujui transaksi ini
+        if (auth()->user()->id !== $transaction->savingSegment->user_id) {
+            abort(403, 'Anda tidak memiliki akses untuk menyetujui transaksi ini.');
         }
-    }
-    // Pastikan untuk selalu mengubah status transaksi
-    $transaction->status = 'rejected';
-    $transaction->save();
 
-    return back()->with('error', 'Transaksi ditolak.');
-}
+        // Jika transaksi sudah diapprove atau direject, jangan proses lagi
+        if ($transaction->status === 'approved' || $transaction->status === 'rejected') {
+            return back()->with('error', 'Transaksi ini sudah tidak pending.');
+        }
+
+        $transaction->status = 'approved';
+        $transaction->save();
+
+        // Temukan atau buat entri saldo siswa untuk segmen ini
+        $studentBalance = StudentSegmentBalance::firstOrCreate(
+            [
+                'user_id' => $transaction->user_id,
+                'saving_segment_id' => $transaction->saving_segment_id,
+            ],
+            ['balance' => 0] // Jika baru dibuat, saldo awal 0
+        );
+
+        // Update saldo berdasarkan tipe transaksi yang disetujui
+        if ($transaction->type === 'deposit') {
+            $studentBalance->balance += $transaction->amount;
+        } elseif ($transaction->type === 'withdrawal') {
+            // Penting: Kurangi saldo jika ini adalah penarikan yang disetujui
+            $studentBalance->balance -= $transaction->amount;
+        }
+        $studentBalance->save();
+
+        return back()->with('success', 'Transaksi berhasil disetujui!');
+    }
+
+    public function rejectTransaction(Transaction $transaction)
+    {
+        // Pastikan pengguna yang login memiliki hak untuk menolak transaksi ini
+        if (auth()->user()->id !== $transaction->savingSegment->user_id) {
+            abort(403, 'Anda tidak memiliki akses untuk menolak transaksi ini.');
+        }
+
+        // Jika transaksi sudah diapprove atau direject, jangan proses lagi
+        if ($transaction->status === 'approved' || $transaction->status === 'rejected') {
+            return back()->with('error', 'Transaksi ini sudah tidak pending.');
+        }
+
+        // Jika transaksi yang ditolak adalah penarikan dan sebelumnya sudah disetujui,
+        // perlu dikembalikan saldonya. Namun, logika Anda saat ini hanya menolak 'pending'.
+        // Jadi, ini hanya perlu untuk mencegah penarikan yang sudah 'approved' ditolak dan saldo dikembalikan dua kali.
+        if ($transaction->status === 'approved' && $transaction->type === 'withdrawal') {
+            // Logika ini mungkin tidak akan terpicu jika hanya pending yang bisa ditolak.
+            // Namun, jika ada kemungkinan mengubah status dari approved ke rejected,
+            // maka saldo perlu dikembalikan.
+            $studentBalance = StudentSegmentBalance::where('user_id', $transaction->user_id)
+                                                    ->where('saving_segment_id', $transaction->saving_segment_id)
+                                                    ->first();
+            if ($studentBalance) {
+                $studentBalance->balance += $transaction->amount; 
+                $studentBalance->save();
+            }
+        }
+        
+        // Pastikan untuk selalu mengubah status transaksi menjadi rejected
+        $transaction->status = 'rejected';
+        $transaction->save();
+
+        return back()->with('error', 'Transaksi ditolak.');
+    }
 }

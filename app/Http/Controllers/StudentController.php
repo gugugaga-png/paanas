@@ -20,25 +20,25 @@ class StudentController extends Controller
         // Mengambil segments yang diikuti dan menghitung saldo untuk setiap segment
         // Ambil hanya 5 segmen terbaru untuk ditampilkan di dashboard
         $joinedSegments = $student->joinedSavingSegments()
-                                   ->latest()
-                                   ->take(5) // HANYA AMBIL 5 TERATAS UNTUK DASHBOARD
-                                   ->get()
-                                   ->map(function ($segment) use ($student) {
-                                       $totalDeposits = $student->transactions()
-                                           ->where('saving_segment_id', $segment->id)
-                                           ->where('type', 'deposit')
-                                           ->where('status', 'approved')
-                                           ->sum('amount');
+                                       ->latest()
+                                       ->take(5) // HANYA AMBIL 5 TERATAS UNTUK DASHBOARD
+                                       ->get()
+                                       ->map(function ($segment) use ($student) {
+                                           $totalDeposits = $student->transactions()
+                                               ->where('saving_segment_id', $segment->id)
+                                               ->where('type', 'deposit')
+                                               ->where('status', 'approved')
+                                               ->sum('amount');
 
-                                       $totalWithdrawals = $student->transactions()
-                                           ->where('saving_segment_id', $segment->id)
-                                           ->where('type', 'withdrawal')
-                                           ->where('status', 'approved')
-                                           ->sum('amount');
+                                           $totalWithdrawals = $student->transactions()
+                                               ->where('saving_segment_id', $segment->id)
+                                               ->where('type', 'withdrawal')
+                                               ->where('status', 'approved')
+                                               ->sum('amount');
 
-                                       $segment->balance = $totalDeposits - $totalWithdrawals;
-                                       return $segment;
-                                   });
+                                           $segment->balance = $totalDeposits - $totalWithdrawals;
+                                           return $segment;
+                                       });
 
         // Ambil juga total semua segmen (tanpa batasan 5) untuk keperluan checking 'show more'
         $totalJoinedSegmentsCount = $student->joinedSavingSegments()->count();
@@ -47,7 +47,7 @@ class StudentController extends Controller
         $pendingTransactions = $student->transactions()->where('status', 'pending')->latest()->get();
         $approvedTransactions = $student->transactions()->where('status', 'approved')->latest()->get();
         $rejectedTransactions = $student->transactions()->where('status', 'rejected')->latest()->get();
-                                   
+                                       
         // Total saldo global (akumulasi dari semua segment yang disetujui)
         $totalBalance = $joinedSegments->sum('balance'); // Menggunakan saldo per segmen yang sudah dihitung
 
@@ -55,12 +55,12 @@ class StudentController extends Controller
         $startThisMonth = $now->copy()->startOfMonth();
         $startLastMonth = $now->copy()->subMonth()->startOfMonth();
         $endLastMonth = $now->copy()->subMonth()->endOfMonth();
-                                   // Total pengeluaran bulan ini
-$expenseThisMonth = $student->transactions()
-    ->where('type', 'withdrawal')
-    ->where('status', 'approved')
-    ->whereBetween('updated_at', [$startThisMonth, $now])
-    ->sum('amount');
+                                       // Total pengeluaran bulan ini
+        $expenseThisMonth = $student->transactions()
+            ->where('type', 'withdrawal')
+            ->where('status', 'approved')
+            ->whereBetween('updated_at', [$startThisMonth, $now])
+            ->sum('amount');
 
         // Hitung pemasukan (deposit) bulan ini dan bulan lalu
         $incomeThisMonth = $student->transactions()
@@ -85,11 +85,6 @@ $expenseThisMonth = $student->transactions()
         $weeklyIncome = [];
         $weeklyExpense = [];
 
-        // Data untuk chart "Pendapatan Mingguan: Bulan Ini vs Bulan Lalu"
-        $weeklyIncomeThisMonth = [];
-        $weeklyIncomeLastMonth = [];
-        $monthlyWeeklyLabels = [];
-
         // Periode untuk chart Pemasukan vs Pengeluaran (Mingguan)
         // Ambil data untuk 4 periode 7 hari terakhir
         for ($i = 0; $i < 4; $i++) {
@@ -113,6 +108,10 @@ $expenseThisMonth = $student->transactions()
         }
 
         // Data untuk chart "Pendapatan Mingguan: Bulan Ini vs Bulan Lalu"
+        $weeklyIncomeThisMonth = [];
+        $weeklyIncomeLastMonth = [];
+        $monthlyWeeklyLabels = [];
+
         for ($i = 0; $i < 4; $i++) {
             $currentMonthWeekStart = $startThisMonth->copy()->addWeeks($i)->startOfWeek(Carbon::SUNDAY);
             $currentMonthWeekEnd = $currentMonthWeekStart->copy()->endOfWeek(Carbon::SATURDAY);
@@ -137,7 +136,6 @@ $expenseThisMonth = $student->transactions()
                 ->where('status', 'approved')
                 ->whereBetween('created_at', [$lastMonthWeekStart, $lastMonthWeekEnd])
                 ->sum('amount');
-                
         }
 
         return view('student.dashboard', compact(
@@ -147,8 +145,7 @@ $expenseThisMonth = $student->transactions()
             'rejectedTransactions',
             'totalBalance',
             'expenseThisMonth',
-'incomeThisMonth',
-
+            'incomeThisMonth',
             'saldoGrowth',
             'weeklyLabels',
             'weeklyIncome',
@@ -214,28 +211,42 @@ $expenseThisMonth = $student->transactions()
             ->where('saving_segment_id', $segment->id)
             ->latest()->paginate(10);
 
-        // Statistik 7 hari terakhir
+        // Statistik 7 hari terakhir: Pisahkan deposit dan withdrawal
         $labels = [];
-        $data = [];
+        $depositsData = []; // Data baru untuk deposit
+        $withdrawalsData = []; // Data baru untuk withdrawal
 
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::today()->subDays($i);
             $labels[] = $date->format('d M');
-            $data[] = $student->transactions()
+
+            // Ambil total deposit untuk tanggal ini
+            $dailyDeposit = $student->transactions()
                 ->whereDate('created_at', $date)
                 ->where('saving_segment_id', $segment->id)
-                ->where('status', 'approved') // Pastikan ini juga disaring
+                ->where('type', 'deposit')
+                ->where('status', 'approved')
                 ->sum('amount');
+            $depositsData[] = $dailyDeposit;
+
+            // Ambil total withdrawal untuk tanggal ini
+            $dailyWithdrawal = $student->transactions()
+                ->whereDate('created_at', $date)
+                ->where('saving_segment_id', $segment->id)
+                ->where('type', 'withdrawal')
+                ->where('status', 'approved')
+                ->sum('amount');
+            $withdrawalsData[] = $dailyWithdrawal;
         }
 
         $weeklyStats = [
             'labels' => $labels,
-            'data' => $data,
+            'deposits' => $depositsData, // Kirim data deposit
+            'withdrawals' => $withdrawalsData, // Kirim data withdrawal
         ];
 
 
-        return view('student.segments.detail', compact('segment', 'balance', 'transactions', 'weeklyStats'));
-
+        return view('student.segments.detail', compact('segment', 'balance', 'transactions', 'weeklyStats', 'totalDeposits', 'totalWithdrawals')); // Pastikan totalDeposits dan totalWithdrawals juga dikirim untuk ringkasan di bawah chart
     }
 
     public function joinSegment(Request $request)
@@ -320,19 +331,19 @@ $expenseThisMonth = $student->transactions()
                                  ->sum('amount');
 
         $approvedWithdrawals = $user->transactions() // Gunakan $user->transactions()
-                                    ->where('saving_segment_id', $segment->id)
-                                    ->where('type', 'withdrawal')
-                                    ->where('status', 'approved')
-                                    ->sum('amount');
+                                     ->where('saving_segment_id', $segment->id)
+                                     ->where('type', 'withdrawal')
+                                     ->where('status', 'approved')
+                                     ->sum('amount');
 
         $currentBalance = $approvedDeposits - $approvedWithdrawals;
 
         // Hitung total penarikan yang masih pending untuk user dan segmen ini
         $pendingWithdrawals = $user->transactions() // Gunakan $user->transactions()
-                                   ->where('saving_segment_id', $segment->id)
-                                   ->where('type', 'withdrawal')
-                                   ->where('status', 'pending')
-                                   ->sum('amount');
+                                       ->where('saving_segment_id', $segment->id)
+                                       ->where('type', 'withdrawal')
+                                       ->where('status', 'pending')
+                                       ->sum('amount');
 
         // Saldo efektif adalah saldo saat ini dikurangi penarikan yang masih pending
         $effectiveBalance = $currentBalance - $pendingWithdrawals;

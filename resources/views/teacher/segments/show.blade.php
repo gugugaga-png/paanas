@@ -32,10 +32,21 @@
                 text-align: left;
             ">
 
-            <h1 class="display-5 fw-bold mb-2">{{ $segment->name }}</h1>
-            <p class="mb-2">{{ $segment->description ?? 'Tidak ada deskripsi' }}</p>
-            <p class="mb-1">Dibuat oleh: {{ $segment->user->name ?? 'Tidak diketahui' }}</p>
-            <span class="badge bg-green-lt">Kode Unik: {{ $segment->unique_code }}</span>
+            <div>
+    <h1 class="display-5 fw-bold mb-2">{{ $segment->name }}</h1>
+    <p class="mb-2">{{ $segment->description ?? 'Tidak ada deskripsi' }}</p>
+  
+         
+                <h6 class="fs-4">Kode Segment</h6>
+                <p class=" fs-4"><span class=" bg-blue-lt p-2">{{ $segment->unique_code }}</span></p>
+         
+ 
+</div>
+
+
+
+
+            
 
         </div>
     </div>
