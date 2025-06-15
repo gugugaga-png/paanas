@@ -13,25 +13,53 @@ use Illuminate\Support\Facades\DB;
 class TeacherController extends Controller
 {
     public function dashboard()
-    {
-        $teacher = auth()->user();
-        $segments = $teacher->savingSegments()->latest()->get();
+{
+    $teacher = auth()->user();
 
-        $pendingTransactions = Transaction::whereIn('saving_segment_id', $segments->pluck('id'))
-                                         ->where('status', 'pending')
-                                         ->latest()
-                                         ->get();
-        $approvedTransactions = Transaction::whereIn('saving_segment_id', $segments->pluck('id'))
-                                          ->where('status', 'approved')
-                                          ->latest()
-                                          ->get();
-        $rejectedTransactions = Transaction::whereIn('saving_segment_id', $segments->pluck('id'))
-                                          ->where('status', 'rejected')
-                                          ->latest()
-                                          ->get();
+    $segments = $teacher->savingSegments()->latest()->get();
 
-        return view('teacher.dashboard', compact('segments', 'pendingTransactions', 'approvedTransactions', 'rejectedTransactions'));
-    }
+    $segments = $segments->map(function ($segment) {
+    $segment->currentBalance = $segment->transactions()
+                                       ->where('status', 'approved')
+                                       ->sum('amount');
+
+    // Pakai field yang benar: target_amount
+    $segment->totalTarget = $segment->target_amount ?? 1;
+
+    return $segment;
+});
+
+
+    $pendingTransactions = Transaction::whereIn('saving_segment_id', $segments->pluck('id'))
+                                     ->where('status', 'pending')
+                                     ->latest()
+                                     ->get();
+
+    $approvedTransactions = Transaction::whereIn('saving_segment_id', $segments->pluck('id'))
+                                      ->where('status', 'approved')
+                                      ->latest()
+                                      ->get();
+
+    $rejectedTransactions = Transaction::whereIn('saving_segment_id', $segments->pluck('id'))
+                                      ->where('status', 'rejected')
+                                      ->latest()
+                                      ->get();
+
+    $totalTarget = $segments->sum('totalTarget');
+
+    return view('teacher.dashboard', compact(
+        'segments',
+        'pendingTransactions',
+        'approvedTransactions',
+        'rejectedTransactions',
+        'totalTarget'
+    ));
+}
+
+
+
+
+    
 
     public function showStudents(SavingSegment $segment)
     {

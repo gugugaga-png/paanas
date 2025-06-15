@@ -121,138 +121,106 @@
     <div class="row g-4 align-items-stretch"> {{-- Tetap gunakan align-items-stretch pada baris utama --}}
 
         {{-- KOLOM KIRI: Saldo dan Segment (col-lg-4) --}}
-        <div class="col-lg-4 d-flex flex-column"> {{-- Tambahkan d-flex flex-column di sini --}}
+        <div class=" d-flex flex-column"> {{-- Tambahkan d-flex flex-column di sini --}}
             {{-- Saldo Total --}}
-            <div class="card mb-4"> {{-- Hapus h-100 di sini, biarkan mb-4 untuk margin bawah --}}
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <div class="text-muted d-flex align-items-center gap-2 fs-4 mb-1">
-                                <span>Total Saldo</span>
-                                <span class="{{ $saldoGrowth >= 0 ? 'text-success' : 'text-danger' }}">
-                                    {{ $saldoGrowth >= 0 ? '+' : '' }}{{ number_format($saldoGrowth, 1) }}%
-                                </span>
-                            </div>
-                            <div class="fw-bold fs-1">Rp {{ number_format($totalBalance, 0, ',', '.') }}</div>
-                        </div>
-                        <div class="d-flex gap-2">
+            <div class="row row-deck mb-4">
+    {{-- Total Saldo --}}
+    <div class="col-12 col-sm-6 col-md-3 col">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-secondary mb-1">Total Saldo</div>
+                <div class="h2 fw-bold">Rp {{ number_format($totalBalance, 0, ',', '.') }}</div>
+                <div class="d-flex gap-2">
                             <div class="d-flex gap-2">
                                 <button type="button" class="btn btn-dark btn-pill" data-bs-toggle="modal" data-bs-target="#depositModal">
                                     Deposit
                                 </button>
-                                <button type="button" class="btn btn-outline-dark btn-pill" data-bs-toggle="modal" data-bs-target="#withdrawModal">
+                                <button type="button" class="btn btn-outline-dark btn-pill " data-bs-toggle="modal" data-bs-target="#withdrawModal">
                                     Withdraw
                                 </button>
                             </div>
                         </div>
-                    </div>
-                </div>
             </div>
+        </div>
+    </div>
+
+    {{-- Total Segment --}}
+    <div class="col-12 col-sm-6 col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-secondary mb-1">Total Segment</div>
+                <div class="h2 fw-bold">{{ $totalJoinedSegmentsCount }} Segment</div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Pengeluaran Bulan Ini --}}
+    <div class="col-12 col-sm-6 col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-secondary mb-1">Pengeluaran Bulan Ini</div>
+                <div class="h2 fw-bold text-danger">Rp {{ number_format($expenseThisMonth, 0, ',', '.') }}</div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Pendapatan Bulan Ini --}}
+    <div class="col-12 col-sm-6 col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-secondary mb-1">Pendapatan Bulan Ini</div>
+                <div class="h2 fw-bold text-success">Rp {{ number_format($incomeThisMonth, 0, ',', '.') }}</div>
+            </div>
+        </div>
+    </div>
+</div>
 
             {{-- Daftar Segment --}}
-            <div class="card flex-grow-1"> {{-- Tambahkan flex-grow-1 di sini --}}
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <div class="fs-3">Daftar Segment</div>
-                    <button type="button" data-bs-toggle="modal" data-bs-target="#joninsegmentModal" class="btn btn-dark btn-pill"><i class="ti ti-plus"></i></button>
-                </div>
-                <ul class="list-group list-group-flush">
-                    @forelse ($joinedSegments as $segment)
-                        <li class="list-group-item px-3 py-2 d-flex justify-content-between align-items-center">
-                            <a href="{{ route('student.segment.detail', $segment->id) }}"
-                               class="d-flex align-items-center text-decoration-none text-body flex-grow-1 gap-3">
-                                <img src="{{ $segment->banner ? asset('storage/' . $segment->banner) : asset('images/default.png') }}"
-                                    alt="Banner" class="avatar avatar-md rounded-circle" style="object-fit: cover;">
-                                <div>
-                                    <div class="fw-bold fs-5 mb-1">{{ $segment->name }}</div>
-                                    <div class="text-primary small">{{ $segment->unique_code }}</div>
-                                </div>
-                            </a>
-                            <div class="text-end fw-bold" style="min-width: 130px;">
-                                Rp {{ number_format($segment->balance, 0, ',', '.') }}
-                            </div>
-                        </li>
-                    @empty
-                        <li class="list-group-item text-center text-muted">Belum bergabung dengan segment tabungan manapun.</li>
-                    @endforelse
 
-                    {{-- Tombol Show More --}}
-                    @if ($totalJoinedSegmentsCount > 5)
-                        <li class="list-group-item text-center">
-                            <a href="{{ route('student.segments.index') }}" class="btn btn-ghost-primary">Lihat Semua Segmen ({{ $totalJoinedSegmentsCount - 5 }} lainnya)</a>
-                        </li>
-                    @endif
-                </ul>
-            </div>
+            <div class="row ">
+    @forelse ($joinedSegments as $segment)
+        <div class="col-12 col-md-3 col-xl-5th">
+            <a href="{{ route('student.segment.detail', $segment->id) }}" class="text-decoration-none text-dark">
+                <div class="card shadow-sm border-0 overflow-hidden rounded-3 h-100" style="position: relative;">
+                    {{-- Gambar banner --}}
+                    <div class="position-relative" style="aspect-ratio: 3 / 1;">
+                        <div class="w-100 h-100"
+                            style="background-image: url('{{ $segment->banner ? asset('storage/' . $segment->banner) : asset('images/default.png') }}');
+                                background-size: cover;
+                                background-position: center;">
+                        </div>
+                        <div class="position-absolute top-0 start-0 w-100 h-100" style="background-color: rgba(0, 0, 0, 0.12);"></div>
+                        <div class="position-absolute top-0 start-0 text-white px-3 py-3 w-100">
+                            <h4 class="fw-normal fs-2 mb-0">{{ $segment->name }}</h4>
+                        </div>
+                    </div>
+
+                    {{-- Deskripsi --}}
+                    <div class="px-3 py-3 border-top" style="height: 145px;">
+                        <div class="fw-normal    fs-4 text-dark">{{ $segment->description }}</div>
+                 </div>
+
+                    {{-- Footer --}}
+                    <div class="card-footer ">
+                       </i><div class="fw-bold text-dark"> <i class="ti ti-wallet p-1 rounded bg-blue-lt"></i> Rp {{ number_format($segment->balance, 0, ',', '.') }}</div>
+                    </div>
+
+                    <span class="stretched-link"></span>
+                </div>
+            </a>
+        </div>
+    @empty
+        <p class="text-center">Tidak ada segment yang diikuti.</p>
+    @endforelse
+</div>
+
+
+
+            
         </div>
 
         {{-- KOLOM KANAN: Chart dan Riwayat Transaksi (col-lg-8) --}}
-        <div class="col-lg-8 d-flex flex-column"> {{-- Tambahkan d-flex flex-column di sini --}}
-            {{-- Kolom Chart --}}
-            <div class="card mb-4"> {{-- Hapus h-100 di sini, biarkan mb-4 untuk margin bawah --}}
-                <div class="card-header">
-                    <h3 class="card-title">Pemasukan vs Pengeluaran Mingguan</h3>
-                </div>
-                <div class="card-body">
-                    <canvas id="incomeExpenseBarChart" height="100"></canvas>
-                </div>
-            </div>
-
-            {{-- Kolom Tabel Transaksi --}}
-            <div class="card flex-grow-1"> {{-- Tambahkan flex-grow-1 di sini --}}
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0">Riwayat Transaksi Tabungan</h3>
-                    <select id="filterStatus" class="form-select w-auto">
-                        <option value="all">Semua</option>
-                        <option value="pending">Menunggu Validasi</option>
-                        <option value="approved">Disetujui</option>
-                        <option value="rejected">Ditolak</option>
-                    </select>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-vcenter text-nowrap datatable" id="transactionTable">
-                        <thead>
-                            <tr>
-                                <th>Tanggal</th>
-                                <th>Segment Tabungan</th>
-                                <th>Jumlah</th>
-                                <th>Status</th>
-                                <th>Petugas</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {{-- ... transaksi ... --}}
-                            @foreach ($pendingTransactions as $transaction)
-                                <tr data-status="pending">
-                                    <td>{{ $transaction->created_at->format('d M Y H:i') }}</td>
-                                    <td>{{ $transaction->savingSegment->name }}</td>
-                                    <td>Rp {{ number_format($transaction->amount, 0, ',', '.') }}</td>
-                                    <td><span class="badge bg-warning-lt">Menunggu Validasi</span></td>
-                                    <td>-</td>
-                                </tr>
-                            @endforeach
-                            @foreach ($approvedTransactions as $transaction)
-                                <tr data-status="approved">
-                                    <td>{{ $transaction->updated_at->format('d M Y H:i') }}</td>
-                                    <td>{{ $transaction->savingSegment->name }}</td>
-                                    <td>Rp {{ number_format($transaction->amount, 0, ',', '.') }}</td>
-                                    <td><span class="badge bg-success-lt">Disetujui</span></td>
-                                    <td>{{ $transaction->approver->name ?? 'N/A' }}</td>
-                                </tr>
-                            @endforeach
-                            @foreach ($rejectedTransactions as $transaction)
-                                <tr data-status="rejected">
-                                    <td>{{ $transaction->updated_at->format('d M Y H:i') }}</td>
-                                    <td>{{ $transaction->savingSegment->name }}</td>
-                                    <td>Rp {{ number_format($transaction->amount, 0, ',', '.') }}</td>
-                                    <td><span class="badge bg-danger-lt">Ditolak</span></td>
-                                    <td>{{ $transaction->approver->name ?? 'N/A' }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+        
     </div>
 </div>  
 @endsection
@@ -280,7 +248,7 @@
                     label: 'Pengeluaran',
                     data: {!! json_encode($weeklyExpense) !!},
                     backgroundColor: 'rgba(255, 99, 132, 0.8)', // Warna batang untuk pengeluaran
-                    borderColor: 'rgba(255, 99, 132, 1)',
+                 borderColor: 'rgba(255, 99, 132, 1)',
                     borderWidth: 1,
                     borderRadius: 5 // Sudut membulat
                 }

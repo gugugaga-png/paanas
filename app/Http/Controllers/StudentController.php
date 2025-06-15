@@ -47,7 +47,7 @@ class StudentController extends Controller
         $pendingTransactions = $student->transactions()->where('status', 'pending')->latest()->get();
         $approvedTransactions = $student->transactions()->where('status', 'approved')->latest()->get();
         $rejectedTransactions = $student->transactions()->where('status', 'rejected')->latest()->get();
-
+                                   
         // Total saldo global (akumulasi dari semua segment yang disetujui)
         $totalBalance = $joinedSegments->sum('balance'); // Menggunakan saldo per segmen yang sudah dihitung
 
@@ -55,6 +55,12 @@ class StudentController extends Controller
         $startThisMonth = $now->copy()->startOfMonth();
         $startLastMonth = $now->copy()->subMonth()->startOfMonth();
         $endLastMonth = $now->copy()->subMonth()->endOfMonth();
+                                   // Total pengeluaran bulan ini
+$expenseThisMonth = $student->transactions()
+    ->where('type', 'withdrawal')
+    ->where('status', 'approved')
+    ->whereBetween('updated_at', [$startThisMonth, $now])
+    ->sum('amount');
 
         // Hitung pemasukan (deposit) bulan ini dan bulan lalu
         $incomeThisMonth = $student->transactions()
@@ -131,6 +137,7 @@ class StudentController extends Controller
                 ->where('status', 'approved')
                 ->whereBetween('created_at', [$lastMonthWeekStart, $lastMonthWeekEnd])
                 ->sum('amount');
+                
         }
 
         return view('student.dashboard', compact(
@@ -139,6 +146,9 @@ class StudentController extends Controller
             'approvedTransactions',
             'rejectedTransactions',
             'totalBalance',
+            'expenseThisMonth',
+'incomeThisMonth',
+
             'saldoGrowth',
             'weeklyLabels',
             'weeklyIncome',

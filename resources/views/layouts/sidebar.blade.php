@@ -1,8 +1,16 @@
 <aside class="navbar navbar-vertical navbar-expand-sm position-absolute" data-bs-theme="light">
     <div class="container-fluid">
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+        <button
+  class="navbar-toggler"
+  type="button"
+  data-bs-toggle="offcanvas"
+  data-bs-target="#offcanvas-sidebar"
+  aria-controls="offcanvas-sidebar"
+  aria-label="Toggle sidebar"
+>
+  <span class="navbar-toggler-icon"></span>
+</button>
+
         <h1 class="navbar-brand navbar-brand-autodark">
             <a href="{{ url('/') }}">
                 <img src="{{ asset('images/logo.svg') }}" width="110" height="32" alt="{{ config('app.name', 'Laravel') }}" class="navbar-brand-image">
@@ -12,14 +20,17 @@
             <ul class="navbar-nav pt-lg-3">
 
                 {{-- Home Link: Always visible for all users --}}
-                <li class="nav-item {{ Request::routeIs('home') || Request::is('/') ? 'active' : '' }}">
-                    <a class="nav-link" href="{{ url('/') }}">
-                        <span class="nav-link-icon d-md-none d-lg-inline-block">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg>
-                        </span>
-                        <span class="nav-link-title"> Home </span>
-                    </a>
-                </li>
+                @guest
+                    <li class="nav-item {{ Request::routeIs('home') || Request::is('/') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ url('/') }}">
+                            <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg>
+                            </span>
+                            <span class="nav-link-title"> Home </span>
+                        </a>
+                    </li>
+                @endguest
+
 
                 {{-- Navigation for Authenticated Users (Teacher and Student) --}}
                 @auth
@@ -77,10 +88,17 @@
                             <div class="dropdown-menu {{ $isAnySegmentRouteActive ? 'show' : '' }}" id="navbar-segments">
                                 @foreach ($segments as $segment)
                                     {{-- Highlight active segment item --}}
-                                    <a href="{{ route('teacher.segments.show', $segment) }}"
-                                       class="dropdown-item {{ Request::routeIs('teacher.segments.show') && request()->segment(count(request()->segments())) == $segment->id ? 'active' : '' }}">
-                                        {{ $segment->name }}
-                                    </a>
+                                    @if(Auth::user()->role_id === 2)
+                                        <a href="{{ route('teacher.segments.show', $segment) }}"
+                                           class="dropdown-item {{ Request::routeIs('teacher.segments.show') && request()->segment(count(request()->segments())) == $segment->id ? 'active' : '' }}">
+                                            {{ $segment->name }}
+                                        </a>
+                                    @elseif(Auth::user()->role_id === 3)
+                                        <a href="{{ route('student.segments.show', $segment) }}"
+                                           class="dropdown-item {{ Request::routeIs('student.segments.show') && request()->segment(count(request()->segments())) == $segment->id ? 'active' : '' }}">
+                                            {{ $segment->name }}
+                                        </a>
+                                    @endif
                                 @endforeach
                             </div>
                         </li>
@@ -104,31 +122,8 @@
                                 <span class="nav-link-title"> Create Segment </span>
                             </a>
                         </li>
-                        {{-- Example for "My Segments" --}}
-                       
                     @endif
 
-                    {{-- Student Specific Navigation --}}
-                    @if(Auth::user()->role_id === 3) {{-- Assuming 3 is the role_id for Student --}}
-                        <li class="nav-item {{ Request::routeIs('student.join.segment.form') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('student.join.segment.form') }}">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.12a3 3 0 1 1 0 5.76a3 3 0 0 1 0 -5.76"/><path d="M15 19v-2a2 2 0 0 1 2 -2h2"/></svg>
-                                </span>
-                                <span class="nav-link-title"> Join Segment </span>
-                            </a>
-                        </li>
-                        <li class="nav-item {{ Request::routeIs('student.deposit.form') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('student.deposit.form') }}">
-                                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M17 8v-3a1 1 0 0 0 -1 -1h-10a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3m0 4v3a1 1 0 0 1 -1 1h-12a2 2 0 0 1 -2 -2v-12"/><path d="M20 12v4h-4a2 2 0 0 1 0 -4h4"/></svg>
-                                </span>
-                                <span class="nav-link-title"> Deposit </span>
-                            </a>
-                        </li>
-                        {{-- Add a route for student's own segment view, if applicable --}}
-                        
-                    @endif
                 @endauth
 
                 {{-- Login/Register Links for Guests --}}

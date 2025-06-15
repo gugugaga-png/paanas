@@ -42,58 +42,76 @@
 
     <div class="row row-cards">
         {{-- Progress Segment Card (Left Column for Chart) --}}
-        <div class="col-md-6 col-lg-4">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Progress Tabungan</h3>
-                </div>
-                <div class="card-body text-center">
-                    @if($currentBalance > 0 || $segment->target_amount > 0) {{-- Render chart if there's any balance or a target --}}
-                        <p class="mb-1 text-muted" style="font-size: 0.9rem;">Target: Rp {{ number_format($segment->target_amount, 0, ',', '.') }}</p>
-                        <div class="position-relative d-inline-block" style="width: 300px; height: 300px;">
-                            <div id="segment-balance-chart" style="width: 100%; height: 100%;"></div>
-
-                            {{-- Persentase progress di depan chart --}}
-                            <div class="position-absolute top-50 start-50 translate-middle text-center">
-                                <div class="fw-bold fs-3 text-success">
-                                    {{ round(($currentBalance / ($segment->target_amount > 0 ? $segment->target_amount : 1)) * 100, 1) }}%
-                                </div>
-                                <small class="text-muted">Tercapai</small>
-                            </div>
-                        </div>
-                        {{-- Summary Below Chart --}}
-                        <h3 class="mt-3">Total Terkumpul: <span class="text-success">Rp {{ number_format($currentBalance, 0, ',', '.') }}</span></h3>
-                        <p class="text-secondary">Sisa Target: Rp {{ number_format(max(0, $segment->target_amount - $currentBalance), 0, ',', '.') }}</p>
-                    @else
-                        <div class="py-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-chart-pie-off text-muted" width="80" height="80" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                               <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                               <path d="M10.59 6.582l1.41 -.582l.006 -2.484" />
-                               <path d="M12 3v9h9" />
-                               <path d="M18.895 14.897c-.006 .006 -.01 .012 -.016 .018m-2.923 1.053l-3.956 3.956c-.537 .538 -1.334 .748 -2.096 .586l-2.731 -.673a1.921 1.921 0 0 0 -1.411 -.183c-.767 .202 -1.48 .704 -1.82 1.343l-1.393 2.658h-.002a.009 .009 0 0 1 -.005 -.005a1 1 0 0 0 -1 1c0 .563 .378 1.037 .899 1.282l2.646 1.267c.725 .347 1.488 .298 2.155 -.163l4.633 -3.279m.062 -4.397a9 9 0 0 0 -8.995 -8.994m-2.983 .99c-.067 .342 -.11 .699 -.117 1.066m10.117 10.134a9 9 0 0 0 2.87 -1.09" />
-                               <path d="M3 3l18 18" />
-                            </svg>
-                            <p class="text-muted mt-3">
-                                Belum ada data tabungan untuk segmen ini.
-                                <br>Mulai ajak siswa menabung!
-                            </p>
-                        </div>
-                    @endif
-
-                    {{-- Tombol untuk melihat Data Siswa (di luar kondisi chart) --}}
-                    <a href="{{ route('teacher.segments.students', $segment) }}" class="btn btn-info w-100 mt-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                            <path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
-                            <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                            <path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
-                        </svg>
-                        Lihat Data Siswa
-                    </a>
-                </div>
-            </div>
+        {{-- Progress Segment Card (Left Column for Stacked Progress Bar) --}}
+<div class="col-md-6 col-lg-4">
+    <div class="card text-light" style="background-color: #37A2EA;box-shadow: 10px 10px 0px 0px #1086D5;
+-webkit-box-shadow: 10px 10px 0px 0px #1086D5;
+-moz-box-shadow: 10px 10px 0px 0px #1086D5;">
+        <div class="card-header">
+            <h3 class="card-title">Progress Tabungan</h3>
         </div>
+        <div class="card-body text-center">
+            @if($currentBalance > 0 || $segment->target_amount > 0)
+               
+
+                <h3 class="mt-2 fs-2 fw-bold">{{ $segment->description }}
+                    <span class="text-success"></span>
+                </h3>
+
+                
+
+                {{-- Stacked Progress Bar --}}
+                <div class="progress mt-4" style="height: 1rem; position: relative;">
+    @php
+        $baseColor = '#1086D5'; // satu warna dasar
+        $totalTarget = $segment->target_amount > 0 ? $segment->target_amount : 1;
+    @endphp
+
+    @foreach ($contributions as $index => $contributor)
+        @php
+            $percentage = ($contributor['amount'] / $totalTarget) * 100;
+            $tooltip = "{$contributor['name']} - Rp " . number_format($contributor['amount'], 0, ',', '.');
+
+            // Buat gradasi saturasi meningkat: mulai dari 1.0 ke atas
+            $saturateLevel = 1 + ($index * 1); // bisa atur ke 0.1 untuk lebih halus
+        @endphp
+
+        <div class="progress-bar"
+             style="width: {{ $percentage }}%; background-color: {{ $baseColor }}; filter: saturate({{ $saturateLevel }});"
+             title="{{ $tooltip }}"
+             data-bs-toggle="tooltip"
+             data-bs-placement="top">
+        </div>
+    @endforeach
+</div>
+
+
+                <p class="fs-3 fw-semibold mt-3">Rp {{ number_format($currentBalance, 0, ',', '.') }} / Rp {{ number_format($segment->target_amount, 0, ',', '.') }}</p>
+                <div class="mt-2 text-muted">
+                   
+                </div>
+            @else
+                <div class="py-4 text-muted">
+                    Belum ada data tabungan untuk segmen ini.
+                    <br>Mulai ajak siswa menabung!
+                </div>
+            @endif
+
+            <a href="{{ route('teacher.segments.students', $segment) }}" style="background-color: #107BFF;" class="btn btn-info w-100 mt-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
+                     stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
+                     stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+                    <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    <path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
+                </svg>
+                Lihat Data Siswa
+            </a>
+        </div>
+    </div>
+</div>
 
         {{-- Tabel Riwayat Transaksi (Right Column) --}}
         <div class="col-md-6 col-lg-8">

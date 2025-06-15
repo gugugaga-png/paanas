@@ -38,64 +38,57 @@
 
 <div class="container-xl">
     {{-- Full Width Banner for Segment Info --}}
-    <div class="card card-cover card-status-top-orange mb-4"
+    <div class="card card-cover card-status-top-orange mb-4 rounded-3"
     style="background-image: url('{{ $segment->banner ? asset('storage/' . $segment->banner) : asset('images/default.png') }}'); background-size: cover; background-position: center; min-height: 250px; position: relative;">
 
-    <div style="
-        position: absolute; 
-        inset: 0;
-        background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 20%);
-        border-radius: inherit;
-    "></div>
+        <div style="
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 20%);
+            border-radius: inherit;
+        "></div>
 
-    <div class="card-body d-flex flex-column justify-content-end align-items-start text-white"
-        style="position: absolute; bottom: 20px; left: 20px; right: 20px; z-index: 2; text-align: left;">
+        <div class="card-body d-flex flex-column justify-content-end align-items-start text-white"
+            style="position: absolute; bottom: 20px; left: 20px; right: 20px; z-index: 2; text-align: left;">
 
-        <h1 class="display-4 fw-bold mb-2">{{ $segment->name }}</h1>
-        <p class="mb-3">{{ $segment->description ?? 'Tidak ada deskripsi' }}</p>
-        <p class="h3 mb-0">
-            <strong>Saldo Saat Ini:</strong> Rp {{ number_format($balance, 0, ',', '.') }}
-        </p>
-
+            <h1 class="display-4 fw-bold mb-2">{{ $segment->name }}</h1>
+            <p class="mb-3">{{ $segment->description ?? 'Tidak ada deskripsi' }}</p>
+        </div>
     </div>
-</div>
 
-
-    <div class="row d-flex my-5">
-        {{-- Kiri --}}
-        <div class="col-5">
+    <div class="row g-4 mb-4"> {{-- Menggunakan g-4 untuk gap antar kolom dan mb-4 untuk margin bawah --}}
+        {{-- Kolom Kiri (Saldo dan Statistik) --}}
+        <div class="col-12 col-lg-5 d-flex flex-column"> {{-- Tetap col-12 untuk mobile, col-lg-5 untuk layar besar, d-flex flex-column untuk mengisi tinggi --}}
             {{-- Saldo --}}
-            <div class="card mb-3">
-    <div class="card-body d-flex justify-content-between align-items-center">
-        <div>
-            <strong class="text-secondary">Your Balance</strong>
-            <h1 class="mb-0">Rp {{ number_format($balance, 0, ',', '.') }}</h1>
-        </div>
-        <div class="d-flex gap-2">
-            <button
-                class="btn btn-dark d-flex align-items-center justify-content-center"
-                style="width: 48px; height: 48px;"
-                data-bs-toggle="modal"
-                data-bs-target="#depositModal"
-                title="Deposit"
-            >
-                <i class="ti ti-plus fs-4"></i>
-            </button>
+            <div class="card mb-4 flex-grow-0"> {{-- mb-4 untuk jarak ke elemen berikutnya, flex-grow-0 agar tidak membesar --}}
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong class="text-secondary">Saldo Kamu</strong>
+                        <h1 class="mb-0">Rp {{ number_format($balance, 0, ',', '.') }}</h1>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button
+                            class="btn btn-dark d-flex align-items-center justify-content-center"
+                            style="width: 48px; height: 48px;"
+                            data-bs-toggle="modal"
+                            data-bs-target="#depositModal"
+                            title="Deposit"
+                        >
+                            <i class="ti ti-plus fs-4"></i>
+                        </button>
 
-            <button type="button" class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#withdrawModal">
-        <i class="ti ti-arrow-up fs-4"></i>
-    </button>
-        </div>
-    </div>
-</div>
-
-
-
-            {{-- Tombol aksi --}}
-           
+                        <button type="button" class="btn btn-dark d-flex align-items-center justify-content-center"
+                            style="width: 48px; height: 48px;"
+                            data-bs-toggle="modal" data-bs-target="#withdrawModal"
+                            title="Withdraw">
+                            <i class="ti ti-arrow-up fs-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             {{-- Statistik --}}
-            <div class="card mb-3">
+            <div class="card flex-grow-1"> {{-- flex-grow-1 agar card ini memenuhi sisa tinggi yang tersedia --}}
                 <div class="card-body">
                     <h4 class="card-title">Statistik Transaksi Minggu Ini</h4>
                     <div id="weekly-chart" style="height: 200px;"></div>
@@ -103,9 +96,9 @@
             </div>
         </div>
 
-        {{-- Kanan --}}
-        <div class="col-7">
-            <div class="card">
+        {{-- Kolom Kanan (Histori Transaksi) --}}
+        <div class="col-12 col-lg-7"> {{-- col-12 untuk mobile, col-lg-7 untuk layar besar --}}
+            <div class="card h-100"> {{-- h-100 agar tinggi card sama dengan kolom kiri --}}
                 <div class="card-body">
                     <h3 class="card-title">Histori Transaksi</h3>
 
@@ -144,7 +137,7 @@
                         </table>
                     </div>
 
-                    {{-- Pagination (dikembalikan ke default Laravel) --}}
+                    {{-- Pagination --}}
                     <div class="d-flex justify-content-center mt-4">
                         {{ $transactions->links() }}
                     </div>

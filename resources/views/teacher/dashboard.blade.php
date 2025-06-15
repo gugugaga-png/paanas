@@ -32,54 +32,59 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 row-cols-lg-4 row-cols-xl-4  g-4">
+    <div class="row ">
     @forelse ($segments as $segment)
-        <div class="col">
-            <div class="card d-flex flex-column h-100"> {{-- Tambahkan h-100 untuk tinggi kartu yang seragam --}}
-            <a href="#">
-    @if($segment->banner)
-        <div class="banner-container" style="position: relative; width: 100%; padding-top: 35%; overflow: hidden;">
-            <img src="{{ asset('storage/' . $segment->banner) }}" alt="Segment Banner" class="banner-image"
-                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; display: block;">
-        </div>
-    @else
-        <div class="banner-container" style="position: relative; width: 100%; padding-top: 35%; overflow: hidden;">
-            <img src="{{ asset('images/default.png') }}" alt="Default Banner" class="banner-image"
-                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; display: block;">
-        </div>
-    @endif
-</a>
-                <div class="card-body d-flex flex-column">
-                    <h3 class="card-title">
-                        <h3 class="card-title">
-    <a href="{{ route('teacher.segments.show', $segment) }}">{{ $segment->name }}</a>
-</h3>
-                    </h3>
-                    <div class="text-secondary flex-grow-1"> {{-- flex-grow-1 agar deskripsi mengambil ruang dan mendorong footer ke bawah --}}
-                        {{ $segment->description ?? 'Tidak ada deskripsi' }}
-                    </div>
-                    <div class="d-flex align-items-center pt-4 mt-auto">
-                        {{-- Memanggil avatar pembuat segment (pastikan $segment->user->avatar_url tersedia) --}}
-                        <span class="avatar me-2" style="background-image: url({{ $segment->user->avatar_url ?? '/static/avatars/default.jpg' }})"></span>
-                        <div class="ms-1">
-                            {{-- Memanggil nama pembuat segment --}}
-                            <a href="#" class="text-body">{{ $segment->user->name ?? 'Pengguna Tidak Dikenal' }}</a>
-                            {{-- Tampilkan kapan segment dibuat --}}
-                            <div class="text-secondary">{{ $segment->created_at->diffForHumans() }}</div>
+        <div class="col-12 col-md-3 col-xl-5th">
+            <a href="{{ route('teacher.segments.show', $segment) }}" class="text-decoration-none text-dark">
+                <div class="card shadow-sm border-0 overflow-hidden rounded-3 h-100" style="position: relative;">
+                    {{-- Gambar banner --}}
+                    <div class="position-relative" style="aspect-ratio: 3 / 1;">
+                        <div class="w-100 h-100"
+                            style="background-image: url('{{ $segment->banner ? asset('storage/' . $segment->banner) : asset('images/default.png') }}');
+                                background-size: cover;
+                                background-position: center;">
                         </div>
-                        <div class="ms-auto">
-                            <a href="#" class="icon d-none d-md-inline-block ms-3 text-secondary">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572" /></svg>
-                            </a>
+                        <div class="position-absolute top-0 start-0 w-100 h-100" style="background-color: rgba(0, 0, 0, 0.12);"></div>
+                        <div class="position-absolute top-0 start-0 text-white px-3 py-3 w-100">
+                            <h4 class="fw-normal fs-2 mb-0">{{ $segment->name }}</h4>
                         </div>
                     </div>
-                </div>
+
+                    {{-- Deskripsi --}}
+                    <div class="px-3 py-3 border-top" style="height: 145px;">
+                        <div class="fw-normal    fs-4 text-dark">{{ $segment->description }}</div>
+                 </div>
+
+                   <div class="card-footer">
+                    @if($segment->totalTarget > 0)
+    @php
+        $percent = min(100, round(($segment->currentBalance / $segment->totalTarget) * 100, 1));
+    @endphp
+    <div class="p">
+        <div class="d-flex justify-content-between">
+            <span class="text-muted small">Progress Tabungan</span>
+            <strong class="small">{{ $percent }}%</strong>
+        </div>
+        <div class="progress mt-1" style="height: 0.5rem;">
+            <div class="progress-bar bg-primary" role="progressbar"
+                 style="width: {{ $percent }}%;"
+                 aria-valuenow="{{ $percent }}" aria-valuemin="0" aria-valuemax="100">
             </div>
         </div>
-    @empty
-        <div class="col-12">
-            <p class="text-center">Belum ada segmen tabungan yang dibuat.</p>
+        <div class="text-muted small mt-1">
+            Rp{{ number_format($segment->currentBalance, 0, ',', '.') }} dari Rp{{ number_format($segment->totalTarget, 0, ',', '.') }}
         </div>
+    </div>
+@endif
+                   </div>
+
+
+                    <span class="stretched-link"></span>
+                </div>
+            </a>
+        </div>
+    @empty
+        <p class="text-center">Tidak ada segment yang diikuti.</p>
     @endforelse
 </div>
     </div>
